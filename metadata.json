@@ -1,0 +1,6 @@
+{
+  "name": "Manajemen Data SDN Lanto Dg. Pasewang",
+  "description": "Sistem informasi manajemen data sekolah terpadu UPTD SPF SDN Lanto Dg. Pasewang Kota Makassar untuk profil, perencanaan, PBD, program unggulan, PTK, kesiswaan, supervisi akademik/manajerial, keuangan, sarpras, dan administrasi kepala sekolah.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "role": { "type": "string" },
+        "email": { "type": "string" },
+        "nip": { "type": "string" },
+        "avatar": { "type": "string" }
+      },
+      "required": ["id", "nama", "role"]
+    },
+    "SchoolProfile": {
+      "title": "SchoolProfile",
+      "description": "Profile data for SDN Lanto Dg. Pasewang",
+      "type": "object",
+      "properties": {
+        "npsn": { "type": "string" },
+        "namaSekolah": { "type": "string" },
+        "akreditasi": { "type": "string" },
+        "alamat": { "type": "string" },
+        "kepalaSekolah": { "type": "string" }
+      },
+      "required": ["npsn", "namaSekolah"]
+    },
+    "GenericSchoolRecord": {
+      "title": "GenericSchoolRecord",
+      "description": "General school management document or record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Registered app user profiles"
+    },
+    "/school_data/{documentId}": {
+      "schema": "GenericSchoolRecord",
+      "description": "Collections of school administrative datasets"
+    }
+  }
+}
