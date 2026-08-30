@@ -36,7 +36,10 @@ export type ActiveTab =
   // Manajemen Kepala Sekolah
   | 'administrasi-ks'
   | 'manajemen-kepala-sekolah'
-  // Enrol Pengguna
+  // Pengaturan Khusus Admin & Enrol Pengguna
+  | 'pengaturan'
+  | 'pengaturan-admin'
+  | 'settings'
   | 'enrol-pengguna'
   | 'user-management';
 
@@ -81,6 +84,10 @@ export interface ProfilSekolah {
   semboyan: string;
   tahunPelajaran?: string;
   semester?: string;
+  logoUrl?: string;
+  logoDinasUrl?: string;
+  tutWuriLogoUrl?: string;
+  stempelUrl?: string;
 }
 
 // 1. Perencanaan Sekolah

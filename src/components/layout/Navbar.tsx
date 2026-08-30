@@ -1,28 +1,17 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { TARGET_DRIVE_FOLDER_URL } from '../../services/driveService';
-import { LoginGuruModal } from '../modules/user/LoginGuruModal';
 import {
   Menu,
-  Printer,
   RotateCcw,
-  UserCheck,
   ChevronDown,
   Shield,
   GraduationCap,
   Briefcase,
-  FileSpreadsheet,
   Building,
   Check,
-  HardDrive,
-  ExternalLink,
-  Cloud,
-  RefreshCw,
-  Flame,
-  LogIn,
   LogOut,
-  Sparkles,
-  KeyRound
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -38,19 +27,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
     logout,
     resetAllData,
     profilSekolah,
-    firebaseUser,
-    isFirebaseConnected,
-    isCloudSyncing,
-    lastCloudSync,
-    loginWithGoogle,
-    logoutFirebase,
-    forceCloudSync
+    isSidebarCollapsed,
+    toggleSidebarCollapse
   } = useApp();
 
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showCloudMenu, setShowCloudMenu] = useState(false);
-  const [isLoginGuruModalOpen, setIsLoginGuruModalOpen] = useState(false);
+
+  const safeUsers = users || [];
 
   const getPageTitle = () => {
     switch (activeTab) {
@@ -80,30 +64,48 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
       case 'sarpras':
         return '1. Manajemen Sarpras (Inventaris, Kondisi, Kebutuhan, Pemeliharaan, Peminjaman)';
       case 'administrasi-ks':
+      case 'manajemen-kepala-sekolah':
         return '1. Manajemen Kepala Sekolah (Agenda, Buku Tamu, Jurnal, SK & Rencana Perbaikan)';
+      case 'pengaturan':
+      case 'pengaturan-admin':
+      case 'settings':
       case 'enrol-pengguna':
-        return 'Enrol Pengguna Guru, Admin & Tenaga Kependidikan';
+      case 'user-management':
+        return 'Pusat Pengaturan Khusus Administrator, Enrol & Cloud Storage';
       default:
         return 'Sistem Informasi Manajemen Sekolah';
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center justify-between shrink-0 shadow-xs">
-      {/* Left side: Hamburger & Title */}
+      {/* Left side: Hamburger (Mobile) / Fold Toggle (Desktop) & Title */}
       <div className="flex items-center gap-3 min-w-0">
+        {/* Mobile Hamburger */}
         <button
-          id="btn-toggle-sidebar"
+          id="btn-toggle-sidebar-mobile"
           type="button"
           onClick={onToggleMobileMenu}
-          className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg lg:hidden focus:outline-none"
-          aria-label="Buka Menu"
+          className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg lg:hidden focus:outline-none cursor-pointer"
+          aria-label="Buka Menu Sidebar"
         >
           <Menu className="w-5 h-5" />
+        </button>
+
+        {/* Desktop Sidebar Fold / Expand Button */}
+        <button
+          id="btn-toggle-sidebar-desktop"
+          type="button"
+          onClick={toggleSidebarCollapse}
+          className="hidden lg:flex p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors focus:outline-none cursor-pointer shadow-2xs items-center justify-center"
+          title={isSidebarCollapsed ? "Buka / Rentangkan Sidebar" : "Lipat Sidebar ke Samping"}
+          aria-label={isSidebarCollapsed ? "Buka Sidebar" : "Lipat Sidebar"}
+        >
+          {isSidebarCollapsed ? (
+            <PanelLeftOpen className="w-4.5 h-4.5 text-blue-600" />
+          ) : (
+            <PanelLeftClose className="w-4.5 h-4.5 text-slate-600" />
+          )}
         </button>
 
         <div className="min-w-0">
@@ -114,128 +116,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
       </div>
 
       {/* Right side: Actions & User Switcher */}
-      <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-xs font-medium text-slate-500">
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 text-xs font-medium text-slate-500">
         
         <span className="hidden md:inline font-medium text-slate-500 text-xs">
           Tahun Ajaran {profilSekolah?.tahunPelajaran || '2024/2025'}
         </span>
-
-        {/* Firebase Cloud Firestore Sync Button */}
-        <div className="relative">
-          <button
-            id="btn-firebase-cloud-sync"
-            type="button"
-            onClick={() => setShowCloudMenu(!showCloudMenu)}
-            title="Status Database Cloud Firestore (Firebase)"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer bg-amber-50/80 border-amber-200 text-amber-900 hover:bg-amber-100"
-          >
-            <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
-            <span className="hidden sm:inline">Firebase</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          </button>
-
-          {showCloudMenu && (
-            <div className="absolute right-0 mt-2 w-72 p-3 bg-white rounded-xl shadow-xl border border-slate-200 z-50 animate-in fade-in zoom-in-95">
-              <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600">
-                    <Flame className="w-4 h-4 fill-amber-500 text-amber-500" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-800">Firebase Firestore</h4>
-                    <p className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-                      Cloud Database Terkoneksi
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 mb-3 space-y-1.5 text-[11px] text-slate-600">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Sinkron Terakhir:</span>
-                  <span className="font-semibold text-slate-800">{lastCloudSync || 'Otomatis aktif'}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Akun Firebase:</span>
-                  <span className="font-semibold text-slate-800 truncate max-w-[120px]">
-                    {firebaseUser ? (firebaseUser.displayName || firebaseUser.email) : 'Tamu / Offline Ready'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  id="btn-trigger-cloud-sync"
-                  onClick={() => {
-                    forceCloudSync();
-                    setShowCloudMenu(false);
-                  }}
-                  disabled={isCloudSyncing}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isCloudSyncing ? 'animate-spin' : ''}`} />
-                  <span>{isCloudSyncing ? 'Menyinkronkan...' : 'Sinkronkan ke Cloud Sekarang'}</span>
-                </button>
-
-                {firebaseUser ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      logoutFirebase();
-                      setShowCloudMenu(false);
-                    }}
-                    className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Keluar Akun Firebase</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      loginWithGoogle();
-                      setShowCloudMenu(false);
-                    }}
-                    className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                  >
-                    <LogIn className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Login dengan Akun Google</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Google Drive Folder Link */}
-        <a
-          id="btn-google-drive-folder"
-          href={TARGET_DRIVE_FOLDER_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Buka Folder Google Drive SDN Lanto Dg. Pasewang"
-          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200"
-        >
-          <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Google Drive</span>
-          <ExternalLink className="w-3 h-3 text-emerald-500" />
-        </a>
-
-        <div className="hidden md:block h-4 w-[1px] bg-slate-300"></div>
-
-        {/* Print / Cetak Laporan */}
-        <button
-          id="btn-cetak-halaman"
-          type="button"
-          onClick={handlePrint}
-          title="Cetak Halaman / Ekspor Laporan PDF"
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200 cursor-pointer"
-        >
-          <Printer className="w-3.5 h-3.5 text-slate-600" />
-          <span>Cetak</span>
-        </button>
 
         {/* Reset Data to initial */}
         <div className="relative">
@@ -258,7 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
                 <button
                   type="button"
                   onClick={() => setShowResetConfirm(false)}
-                  className="px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
                 >
                   Batal
                 </button>
@@ -268,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
                     resetAllData();
                     setShowResetConfirm(false);
                   }}
-                  className="px-2.5 py-1 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-xs"
+                  className="px-2.5 py-1 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-xs cursor-pointer"
                 >
                   Ya, Reset
                 </button>
@@ -276,19 +161,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
             </div>
           )}
         </div>
-
-        {/* Button Login Guru (User: NIP, Pass: 123456) */}
-        <button
-          id="btn-navbar-login-guru"
-          type="button"
-          onClick={() => setIsLoginGuruModalOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-          title="Login Pengguna Guru (User: NIP, Password: 123456)"
-        >
-          <KeyRound className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Login Guru (NIP)</span>
-          <span className="sm:hidden">Login Guru</span>
-        </button>
 
         {/* Quick Role & User Switcher Dropdown */}
         <div className="relative">
@@ -299,14 +171,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
             className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 text-left transition-all cursor-pointer"
           >
             <div className="w-6 h-6 rounded bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-              {currentUser.nama.charAt(0)}
+              {currentUser?.nama ? currentUser.nama.charAt(0) : 'U'}
             </div>
             <div className="hidden md:block">
               <div className="text-xs font-semibold text-slate-800 leading-tight">
-                {currentUser.nama}
+                {currentUser?.nama || 'Pengguna'}
               </div>
               <div className="text-[10px] text-slate-500 capitalize">
-                Role: <span className="font-semibold text-blue-600">{currentUser.role.replace('_', ' ')}</span>
+                Role: <span className="font-semibold text-blue-600">{(currentUser?.role || 'guru').replace('_', ' ')}</span>
               </div>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
@@ -324,8 +196,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
               </div>
 
               <div className="max-h-64 overflow-y-auto py-1">
-                {users.map(user => {
-                  const isCurrent = user.id === currentUser.id;
+                {safeUsers.map(user => {
+                  const isCurrent = currentUser && user.id === currentUser.id;
                   const roleBadgeStyle = {
                     admin: 'bg-rose-100 text-rose-800',
                     kepala_sekolah: 'bg-purple-100 text-purple-800',
@@ -364,18 +236,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
                 })}
               </div>
 
-              <div className="px-3 pt-2 border-t border-slate-100 mt-1 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRoleMenu(false);
-                    setIsLoginGuruModalOpen(true);
-                  }}
-                  className="text-[11px] text-emerald-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <KeyRound className="w-3 h-3" />
-                  <span>Login NIP Guru</span>
-                </button>
+              <div className="px-3 pt-2 border-t border-slate-100 mt-1 flex items-center justify-end">
                 <button
                   type="button"
                   onClick={() => {
@@ -385,7 +246,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
                   className="text-[11px] text-rose-600 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <LogOut className="w-3 h-3" />
-                  <span>Keluar</span>
+                  <span>Keluar Akun</span>
                 </button>
               </div>
             </div>
@@ -405,12 +266,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
         </button>
 
       </div>
-
-      {/* Modal Login Guru */}
-      <LoginGuruModal
-        isOpen={isLoginGuruModalOpen}
-        onClose={() => setIsLoginGuruModalOpen(false)}
-      />
     </header>
   );
 };

@@ -49,15 +49,20 @@ export const DataKelasSection: React.FC = () => {
     keterangan: ''
   });
 
+  const safeKelasList = kelasList || [];
+  const safeSiswaList = siswaList || [];
+  const safePtkList = ptkList || [];
+
   const handleOpenAdd = () => {
     setEditingKelas(null);
+    const firstGuru = safePtkList.find(p => p.jabatan && p.jabatan.includes('Guru'));
     setFormData({
       namaKelas: '',
       tingkat: '1',
       fase: 'Fase A',
       kurikulum: 'Kurikulum Merdeka',
-      waliKelas: ptkList.find(p => p.jabatan.includes('Guru'))?.nama || '',
-      nipWaliKelas: ptkList.find(p => p.jabatan.includes('Guru'))?.nip || '',
+      waliKelas: firstGuru?.nama || '',
+      nipWaliKelas: firstGuru?.nip || '',
       ruangan: 'Ruang Kelas',
       kapasitas: 30,
       tahunAjaran: '2024/2025',
@@ -103,15 +108,15 @@ export const DataKelasSection: React.FC = () => {
 
   // Helper to get students of a specific class
   const getStudentsOfClass = (className: string): Siswa[] => {
-    return siswaList.filter(s => s.kelas.toLowerCase() === className.toLowerCase());
+    return safeSiswaList.filter(s => s.kelas && s.kelas.toLowerCase() === className.toLowerCase());
   };
 
   // Filtered List
-  const filteredKelas = kelasList.filter(kls => {
+  const filteredKelas = safeKelasList.filter(kls => {
     const matchesSearch =
-      kls.namaKelas.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      kls.waliKelas.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      kls.ruangan.toLowerCase().includes(searchQuery.toLowerCase());
+      (kls.namaKelas || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (kls.waliKelas || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (kls.ruangan || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFase =
       selectedFase === 'Semua' || kls.fase === selectedFase;
     const matchesTingkat =
@@ -120,11 +125,11 @@ export const DataKelasSection: React.FC = () => {
   });
 
   // Statistics
-  const totalRombel = kelasList.length;
-  const totalKapasitas = kelasList.reduce((acc, k) => acc + (k.kapasitas || 0), 0);
-  const totalFaseA = kelasList.filter(k => k.fase === 'Fase A').length;
-  const totalFaseB = kelasList.filter(k => k.fase === 'Fase B').length;
-  const totalFaseC = kelasList.filter(k => k.fase === 'Fase C').length;
+  const totalRombel = safeKelasList.length;
+  const totalKapasitas = safeKelasList.reduce((acc, k) => acc + (k.kapasitas || 0), 0);
+  const totalFaseA = safeKelasList.filter(k => k.fase === 'Fase A').length;
+  const totalFaseB = safeKelasList.filter(k => k.fase === 'Fase B').length;
+  const totalFaseC = safeKelasList.filter(k => k.fase === 'Fase C').length;
 
   return (
     <div id="data-kelas-section" className="space-y-6">

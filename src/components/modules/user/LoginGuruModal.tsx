@@ -39,8 +39,10 @@ export const LoginGuruModal: React.FC<LoginGuruModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickPick, setShowQuickPick] = useState(true);
 
+  const safeUsers = users || [];
+
   // Filter list of Guru and staff
-  const guruUsers = users.filter(u => u.role === 'guru' || u.role === 'kepala_sekolah' || u.role === 'tata_usaha');
+  const guruUsers = safeUsers.filter(u => u.role === 'guru' || u.role === 'kepala_sekolah' || u.role === 'tata_usaha');
 
   const handleQuickSelect = (user: UserAccount) => {
     setNipInput(user.nip || user.email);

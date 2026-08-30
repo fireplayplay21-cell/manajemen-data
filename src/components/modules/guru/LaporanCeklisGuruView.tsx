@@ -70,10 +70,13 @@ export const LaporanCeklisGuruView: React.FC<LaporanCeklisGuruViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedTeacherId, setExpandedTeacherId] = useState<string | null>(null);
 
+  const safeUsers = users || [];
+  const safeAdminList = administrasiGuruList || [];
+
   // List of all active teachers
   const guruList = useMemo(() => {
-    return users.filter(u => u.role === 'guru');
-  }, [users]);
+    return safeUsers.filter(u => u.role === 'guru');
+  }, [safeUsers]);
 
   // Flattened all 18 standard items across the 5 pillars
   const allMasterItems = useMemo(() => {
@@ -110,7 +113,7 @@ export const LaporanCeklisGuruView: React.FC<LaporanCeklisGuruViewProps> = ({
   const teacherChecklistData = useMemo(() => {
     return guruList.map(guru => {
       // Find all documents uploaded by this teacher
-      const teacherDocs = administrasiGuruList.filter(doc => doc.guruId === guru.id);
+      const teacherDocs = safeAdminList.filter(doc => doc.guruId === guru.id);
 
       // Check each master document item
       const itemStatusList = allMasterItems.map(masterItem => {
@@ -167,7 +170,7 @@ export const LaporanCeklisGuruView: React.FC<LaporanCeklisGuruViewProps> = ({
         pilarBreakdown
       };
     });
-  }, [guruList, administrasiGuruList, allMasterItems]);
+  }, [guruList, safeAdminList, allMasterItems]);
 
   // Filtered Teacher Checklist Data
   const filteredTeacherData = useMemo(() => {
@@ -204,8 +207,8 @@ export const LaporanCeklisGuruView: React.FC<LaporanCeklisGuruViewProps> = ({
     const avgPercentage = Math.round(sumPercentage / totalTeachers);
     const fullyComplete = teacherChecklistData.filter(t => t.percentage === 100).length;
     const highComplete = teacherChecklistData.filter(t => t.percentage >= 80).length;
-    const pendingReview = administrasiGuruList.filter(d => d.status === 'Terkirim' || d.status === 'Ditinjau KS').length;
-    const totalApproved = administrasiGuruList.filter(d => d.status === 'Disetujui Penuh').length;
+    const pendingReview = safeAdminList.filter(d => d.status === 'Terkirim' || d.status === 'Ditinjau KS').length;
+    const totalApproved = safeAdminList.filter(d => d.status === 'Disetujui Penuh').length;
 
     return {
       totalTeachers,
@@ -214,9 +217,9 @@ export const LaporanCeklisGuruView: React.FC<LaporanCeklisGuruViewProps> = ({
       highComplete,
       pendingReview,
       totalApproved,
-      totalDocs: administrasiGuruList.length
+      totalDocs: safeAdminList.length
     };
-  }, [teacherChecklistData, administrasiGuruList]);
+  }, [teacherChecklistData, safeAdminList]);
 
   // Handle print
   const handlePrint = () => {

@@ -155,6 +155,9 @@ export const AdministrasiGuruView: React.FC = () => {
     status: 'Disetujui Penuh'
   });
 
+  const safeUsers = users || [];
+  const safeAdminGuru = administrasiGuruList || [];
+
   // Available document types based on selected kategori in form
   const currentCategoryObj = MASTER_JENIS_DOKUMEN_GURU.find(
     k => k.kategori === formData.kategori
@@ -163,13 +166,13 @@ export const AdministrasiGuruView: React.FC = () => {
 
   // Filtered List
   const filteredList = useMemo(() => {
-    return administrasiGuruList.filter(item => {
+    return safeAdminGuru.filter(item => {
       // If onlyMyDocs is active
       if (onlyMyDocs) {
         const isMine =
-          item.guruId === currentUser.id ||
-          (item.namaGuru && currentUser.nama && item.namaGuru.toLowerCase().includes(currentUser.nama.toLowerCase())) ||
-          (currentUser.nip && item.nipGuru && item.nipGuru.replace(/\s+/g, '') === currentUser.nip.replace(/\s+/g, ''));
+          item.guruId === currentUser?.id ||
+          (item.namaGuru && currentUser?.nama && item.namaGuru.toLowerCase().includes(currentUser.nama.toLowerCase())) ||
+          (currentUser?.nip && item.nipGuru && item.nipGuru.replace(/\s+/g, '') === currentUser.nip.replace(/\s+/g, ''));
         if (!isMine) return false;
       }
       const matchesGuru = selectedGuruFilter === 'Semua' || item.guruId === selectedGuruFilter;
@@ -184,16 +187,16 @@ export const AdministrasiGuruView: React.FC = () => {
 
       return matchesGuru && matchesKategori && matchesStatus && matchesSearch;
     });
-  }, [administrasiGuruList, selectedGuruFilter, selectedKategori, selectedStatus, searchQuery, onlyMyDocs, currentUser]);
+  }, [safeAdminGuru, selectedGuruFilter, selectedKategori, selectedStatus, searchQuery, onlyMyDocs, currentUser]);
 
   // Statistics
   const stats = useMemo(() => {
-    const total = administrasiGuruList.length;
-    const disetujui = administrasiGuruList.filter(d => d.status === 'Disetujui Penuh').length;
-    const menunggu = administrasiGuruList.filter(d => d.status === 'Terkirim' || d.status === 'Ditinjau KS').length;
-    const draft = administrasiGuruList.filter(d => d.status === 'Draft').length;
+    const total = safeAdminGuru.length;
+    const disetujui = safeAdminGuru.filter(d => d.status === 'Disetujui Penuh').length;
+    const menunggu = safeAdminGuru.filter(d => d.status === 'Terkirim' || d.status === 'Ditinjau KS').length;
+    const draft = safeAdminGuru.filter(d => d.status === 'Draft').length;
     return { total, disetujui, menunggu, draft };
-  }, [administrasiGuruList]);
+  }, [safeAdminGuru]);
 
   // Handle open add modal
   const handleOpenAddModal = () => {
@@ -514,7 +517,7 @@ export const AdministrasiGuruView: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
           {MASTER_JENIS_DOKUMEN_GURU.map(kat => {
-            const count = administrasiGuruList.filter(d => d.kategori === kat.kategori).length;
+            const count = safeAdminGuru.filter(d => d.kategori === kat.kategori).length;
             const isSelected = selectedKategori === kat.kategori;
             return (
               <button
@@ -611,7 +614,7 @@ export const AdministrasiGuruView: React.FC = () => {
               className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:bg-white focus:outline-none focus:border-blue-500 max-w-[180px]"
             >
               <option value="Semua">Semua Guru</option>
-              {users.filter(u => u.role === 'guru').map(g => (
+              {safeUsers.filter(u => u.role === 'guru').map(g => (
                 <option key={g.id} value={g.id}>{g.nama}</option>
               ))}
             </select>
@@ -660,7 +663,7 @@ export const AdministrasiGuruView: React.FC = () => {
             )}
             {selectedGuruFilter !== 'Semua' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold border border-purple-200">
-                Guru: {users.find(u => u.id === selectedGuruFilter)?.nama || selectedGuruFilter}
+                Guru: {safeUsers.find(u => u.id === selectedGuruFilter)?.nama || selectedGuruFilter}
                 <button type="button" onClick={() => setSelectedGuruFilter('Semua')}><X className="w-3 h-3" /></button>
               </span>
             )}
@@ -1013,7 +1016,7 @@ export const AdministrasiGuruView: React.FC = () => {
                     <select
                       value={formData.guruId}
                       onChange={(e) => {
-                        const selectedUser = users.find(u => u.id === e.target.value);
+                        const selectedUser = safeUsers.find(u => u.id === e.target.value);
                         if (selectedUser) {
                           setFormData(prev => ({
                             ...prev,
@@ -1025,7 +1028,7 @@ export const AdministrasiGuruView: React.FC = () => {
                       }}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
                     >
-                      {users.filter(u => u.role === 'guru').map(g => (
+                      {safeUsers.filter(u => u.role === 'guru').map(g => (
                         <option key={g.id} value={g.id}>{g.nama} ({g.nip || 'Guru'})</option>
                       ))}
                     </select>

@@ -28,7 +28,8 @@ export const KartuAksesLoginModal: React.FC<KartuAksesLoginModalProps> = ({
   users,
   profilSekolah
 }) => {
-  const guruUsers = users.filter(u => u.role === 'guru' || u.role === 'tata_usaha' || u.role === 'kepala_sekolah');
+  const safeUsers = users || [];
+  const guruUsers = safeUsers.filter(u => u.role === 'guru' || u.role === 'tata_usaha' || u.role === 'kepala_sekolah');
 
   const handlePrint = () => {
     window.print();
@@ -80,11 +81,17 @@ export const KartuAksesLoginModal: React.FC<KartuAksesLoginModalProps> = ({
                 {/* Top Badge */}
                 <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center font-black text-[10px]">
-                      {idx + 1}
+                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 shadow-2xs">
+                      {profilSekolah.logoUrl ? (
+                        <img src={profilSekolah.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="w-full h-full bg-emerald-700 text-white rounded flex items-center justify-center font-black text-[10px]">
+                          {idx + 1}
+                        </div>
+                      )}
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold text-slate-800 uppercase tracking-tight">
+                      <div className="text-[10px] font-bold text-slate-800 uppercase tracking-tight line-clamp-1">
                         {profilSekolah.namaSekolah}
                       </div>
                       <div className="text-[9px] text-slate-500 font-mono">
@@ -92,39 +99,46 @@ export const KartuAksesLoginModal: React.FC<KartuAksesLoginModalProps> = ({
                       </div>
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 uppercase">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 uppercase shrink-0">
                     KARTU LOGIN GURU
                   </span>
                 </div>
 
                 {/* Body Details */}
-                <div className="space-y-1.5 text-[11px]">
-                  <div className="font-bold text-slate-900 text-xs">
-                    {user.nama}
-                  </div>
-                  <div className="text-slate-500 text-[10px]">
-                    {user.jabatan} {user.kelasTugas ? `• ${user.kelasTugas}` : ''}
-                  </div>
-
-                  <div className="mt-2.5 p-2 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-semibold flex items-center gap-1">
-                        <KeyRound className="w-3 h-3 text-emerald-600" />
-                        <span>Username (NIP):</span>
-                      </span>
-                      <span className="font-mono font-bold text-slate-900 select-all bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                        {user.nip || '-'}
-                      </span>
+                <div className="flex items-start gap-3">
+                  <img
+                    src={user.foto || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'}
+                    alt={user.nama}
+                    className="w-12 h-16 object-cover rounded-lg border border-slate-300 shrink-0 shadow-2xs bg-slate-100"
+                  />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="font-bold text-slate-900 text-xs">
+                      {user.nama}
+                    </div>
+                    <div className="text-slate-500 text-[10px]">
+                      {user.jabatan} {user.kelasTugas ? `• ${user.kelasTugas}` : ''}
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-semibold flex items-center gap-1">
-                        <Lock className="w-3 h-3 text-emerald-600" />
-                        <span>Password Default:</span>
-                      </span>
-                      <span className="font-mono font-black text-emerald-800 select-all bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-300">
-                        {password}
-                      </span>
+                    <div className="mt-2 p-1.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-slate-500 font-semibold flex items-center gap-1">
+                          <KeyRound className="w-3 h-3 text-emerald-600" />
+                          <span>NIP / User:</span>
+                        </span>
+                        <span className="font-mono font-bold text-slate-900 select-all bg-white px-1.5 py-0.2 rounded border border-slate-200 text-[10px]">
+                          {user.nip || '-'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-slate-500 font-semibold flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-emerald-600" />
+                          <span>Password:</span>
+                        </span>
+                        <span className="font-mono font-black text-emerald-800 select-all bg-emerald-100/80 px-1.5 py-0.2 rounded border border-emerald-300 text-[10px]">
+                          {password}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

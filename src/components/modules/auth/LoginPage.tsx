@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { UserAccount } from '../../../types';
 import {
-  School,
+  Cloud,
   Lock,
-  KeyRound,
   Eye,
   EyeOff,
   LogIn,
@@ -13,63 +12,63 @@ import {
   Sparkles,
   CheckCircle2,
   AlertCircle,
-  Building2,
   Users,
-  FileSpreadsheet,
   Award,
   ChevronRight,
-  ArrowRight,
   HelpCircle,
   Briefcase,
   Layers,
-  Laptop,
-  Flame
+  ArrowRight,
+  HardDrive
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { users, currentUser, loginWithCredentials, profilSekolah, loginWithGoogle, firebaseUser, forceCloudSync } = useApp();
+  const { users, currentUser, loginWithCredentials, profilSekolah, loginWithGoogle, firebaseUser } = useApp();
 
-  const [activePortalTab, setActivePortalTab] = useState<'guru' | 'ks' | 'admin' | 'quick'>('guru');
-  const [identifierInput, setIdentifierInput] = useState<string>('');
+  const [activeRole, setActiveRole] = useState<'admin' | 'kepala_sekolah' | 'guru'>('guru');
+  const [identifierInput, setIdentifierInput] = useState<string>('198503152009022004');
   const [passwordInput, setPasswordInput] = useState<string>('123456');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showQuickPicker, setShowQuickPicker] = useState<boolean>(false);
 
-  // Grouped users for quick access
-  const guruList = users.filter(u => u.role === 'guru');
-  const ksList = users.filter(u => u.role === 'kepala_sekolah');
-  const adminList = users.filter(u => u.role === 'admin' || u.role === 'tata_usaha');
+  const safeUsers = users || [];
 
-  // Handle portal tab change
-  const handlePortalTabChange = (tab: 'guru' | 'ks' | 'admin' | 'quick') => {
-    setActivePortalTab(tab);
+  // Filtered lists
+  const guruList = safeUsers.filter(u => u.role === 'guru');
+  const ksList = safeUsers.filter(u => u.role === 'kepala_sekolah');
+  const adminList = safeUsers.filter(u => u.role === 'admin' || u.role === 'tata_usaha');
+
+  // Handle Role Switch
+  const handleRoleChange = (role: 'admin' | 'kepala_sekolah' | 'guru') => {
+    setActiveRole(role);
     setErrorMessage(null);
 
-    if (tab === 'guru') {
-      const firstGuru = guruList[0];
-      setIdentifierInput(firstGuru ? (firstGuru.nip || firstGuru.email) : '');
-      setPasswordInput(firstGuru?.password || '123456');
-    } else if (tab === 'ks') {
-      const firstKs = ksList[0];
-      setIdentifierInput(firstKs ? (firstKs.nip || firstKs.email) : '');
-      setPasswordInput(firstKs?.password || '123456');
-    } else if (tab === 'admin') {
-      const firstAdmin = adminList[0];
-      setIdentifierInput(firstAdmin ? (firstAdmin.nip || firstAdmin.email || firstAdmin.nama) : '');
-      setPasswordInput(firstAdmin?.password || '123456');
+    if (role === 'guru') {
+      const defaultGuru = guruList[0];
+      setIdentifierInput(defaultGuru ? (defaultGuru.nip || defaultGuru.email) : '198503152009022004');
+      setPasswordInput(defaultGuru?.password || '123456');
+    } else if (role === 'kepala_sekolah') {
+      const defaultKs = ksList[0];
+      setIdentifierInput(defaultKs ? (defaultKs.nip || defaultKs.email) : '196805121990032001');
+      setPasswordInput(defaultKs?.password || '123456');
+    } else if (role === 'admin') {
+      const defaultAdmin = adminList[0];
+      setIdentifierInput(defaultAdmin ? (defaultAdmin.nip || defaultAdmin.email || defaultAdmin.nama) : 'admin');
+      setPasswordInput(defaultAdmin?.password || '123456');
     }
   };
 
   // Select a specific user preset
   const handleSelectUser = (user: UserAccount) => {
+    const targetRole = (user.role === 'admin' || user.role === 'tata_usaha') ? 'admin' : (user.role as 'kepala_sekolah' | 'guru');
+    setActiveRole(targetRole);
     setIdentifierInput(user.nip || user.email || user.nama);
     setPasswordInput(user.password || '123456');
     setErrorMessage(null);
-    if (user.role === 'guru') setActivePortalTab('guru');
-    else if (user.role === 'kepala_sekolah') setActivePortalTab('ks');
-    else setActivePortalTab('admin');
+    setShowQuickPicker(false);
   };
 
   // Submit login
@@ -78,7 +77,7 @@ export const LoginPage: React.FC = () => {
     setErrorMessage(null);
 
     if (!identifierInput.trim()) {
-      setErrorMessage('Harap masukkan NIP, email, atau nama pengguna.');
+      setErrorMessage('Harap masukkan NIP, Username, atau Email Anda.');
       return;
     }
 
@@ -93,7 +92,7 @@ export const LoginPage: React.FC = () => {
     }, 200);
   };
 
-  // Instant login for quick access cards
+  // Direct login
   const handleDirectLogin = (user: UserAccount) => {
     setIsLoading(true);
     setTimeout(() => {
@@ -102,470 +101,554 @@ export const LoginPage: React.FC = () => {
     }, 150);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-slate-100 flex flex-col justify-between antialiased selection:bg-blue-600 selection:text-white">
-      {/* Top Bar / Header Branding */}
-      <header className="border-b border-slate-700/60 bg-slate-900/80 backdrop-blur-md px-4 sm:px-8 py-3.5 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-md shadow-blue-500/20 border border-blue-400/30">
-              <School className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm sm:text-base text-white tracking-tight">
-                  SIM TERPADU SDN LANTO DG. PASEWANG
-                </span>
-                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  AKREDITASI A
-                </span>
-              </div>
-              <div className="text-[11px] text-slate-400 font-medium hidden xs:block">
-                NPSN: <span className="font-mono text-slate-300">40307374</span> • Kota Makassar, Sulawesi Selatan
-              </div>
-            </div>
-          </div>
+  // Role Metadata Configs
+  const roleConfigs = {
+    admin: {
+      title: 'Login Administrator & TU',
+      tagline: 'Portal Tata Kelola Master Data & Sistem',
+      badge: 'Admin / Operator',
+      badgeColor: 'bg-rose-100 text-rose-700 border-rose-200',
+      activeTabClass: 'bg-rose-500 text-white shadow-md shadow-rose-500/30',
+      buttonClass: 'bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 shadow-rose-500/25',
+      inputPlaceholder: 'Username Admin / NIP Operator (cth: admin)',
+      inputLabel: 'Username / NIP Administrator',
+      icon: <ShieldCheck className="w-5 h-5" />,
+      features: ['Manajemen PTK, Siswa & Sarpras', 'Pengelolaan Kas BOSP & RKAS', 'Manajemen Akun Pengguna & Backup Cloud']
+    },
+    kepala_sekolah: {
+      title: 'Login Kepala Sekolah',
+      tagline: 'Portal Supervisi & Kepemimpinan Pembelajaran',
+      badge: 'Pimpinan Sekolah',
+      badgeColor: 'bg-purple-100 text-purple-700 border-purple-200',
+      activeTabClass: 'bg-purple-600 text-white shadow-md shadow-purple-600/30',
+      buttonClass: 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-purple-500/25',
+      inputPlaceholder: 'NIP Kepala Sekolah (cth: 196805121990032001)',
+      inputLabel: 'NIP / Email Kepala Sekolah',
+      icon: <Award className="w-5 h-5" />,
+      features: ['Supervisi Akademik & Validasi Perangkat', 'Monitoring Rapor Pendidikan & PBD', 'Disposisi Surat Masuk & Kerjasama MOU']
+    },
+    guru: {
+      title: 'Login Guru & Pendidik',
+      tagline: 'Portal Administrasi Kelas & Perangkat Ajar',
+      badge: 'Guru Kelas & Mapel',
+      badgeColor: 'bg-sky-100 text-sky-700 border-sky-200',
+      activeTabClass: 'bg-[#00c0ff] text-white shadow-md shadow-[#00c0ff]/30',
+      buttonClass: 'bg-[#00c0ff] hover:bg-[#00abeb] text-white shadow-[#00c0ff]/30',
+      inputPlaceholder: 'NIP Guru 18 Digit (cth: 198503152009022004)',
+      inputLabel: 'NIP Guru / Nama Pengguna',
+      icon: <GraduationCap className="w-5 h-5" />,
+      features: ['Administrasi RPP & Modul Ajar Merdeka', 'Input Nilai Siswa, Rapor & Jurnal Harian', 'Integrasi Google Drive Dokumen & Sertifikat']
+    }
+  };
 
-          <div className="flex items-center gap-2">
-            <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Sistem Aktif & Terhubung
+  const currentConfig = roleConfigs[activeRole];
+
+  return (
+    <div className="min-h-screen bg-[#00c3ff] flex items-center justify-center p-3 sm:p-6 md:p-8 lg:p-10 antialiased selection:bg-[#00c0ff] selection:text-white">
+      {/* Outer Card Container */}
+      <div className="w-full max-w-5xl bg-white rounded-[32px] shadow-2xl shadow-cyan-950/25 border border-white/60 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
+        
+        {/* ================= LEFT SIDE: BRANDING, VECTOR ILLUSTRATION & CLOUD CAPTION ================= */}
+        <div className="lg:col-span-6 bg-gradient-to-b from-white via-sky-50/40 to-cyan-50/70 p-6 sm:p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 relative overflow-hidden">
+          
+          {/* Top Logo */}
+          <div className="flex items-center justify-between z-10">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 text-blue-600 flex items-center justify-center shadow-md shadow-[#00c0ff]/20 p-1 overflow-hidden shrink-0">
+                {profilSekolah.logoUrl ? (
+                  <img src={profilSekolah.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <Cloud className="w-5 h-5 text-[#00c0ff] fill-[#00c0ff]" />
+                )}
+              </div>
+              <div>
+                <span className="text-sm font-black tracking-wider text-slate-800 uppercase block leading-none">
+                  SIM LANTO
+                </span>
+                <span className="text-[10px] font-bold text-slate-500 tracking-tight block mt-0.5">
+                  {profilSekolah.namaSekolah || 'UPTD SPF SDN LANTO DG. PASEWANG'}
+                </span>
+              </div>
+            </div>
+
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-cyan-100/80 text-cyan-800 border border-cyan-200">
+              AKREDITASI {profilSekolah.akreditasi || 'A'}
             </span>
           </div>
-        </div>
-      </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          
-          {/* Left Column: School Information & Capabilities */}
-          <div className="lg:col-span-6 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-xs font-bold tracking-wide uppercase">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <span>Portal Masuk Manajemen Data Sekolah</span>
+          {/* Center Illustration Area */}
+          <div className="py-6 sm:py-8 flex flex-col items-center justify-center relative my-auto">
+            
+            {/* Custom Modern Vector Illustration (Matching reference image style) */}
+            <div className="w-full max-w-[340px] aspect-[4/3] relative flex items-center justify-center">
+              <svg viewBox="0 0 400 320" className="w-full h-full drop-shadow-sm select-none" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="blobGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#00d2ff" />
+                    <stop offset="100%" stopColor="#0077b6" />
+                  </linearGradient>
+                  <linearGradient id="sheetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="100%" stopColor="#f8fafc" />
+                  </linearGradient>
+                  <linearGradient id="charGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#0284c7" />
+                    <stop offset="100%" stopColor="#0369a1" />
+                  </linearGradient>
+                </defs>
+
+                {/* Background Organic Blob Shape */}
+                <path
+                  d="M70,140 C50,80 120,30 200,45 C280,60 360,90 350,170 C340,250 260,280 170,275 C90,270 90,200 70,140 Z"
+                  fill="url(#blobGrad)"
+                  opacity="0.88"
+                />
+
+                {/* Floating Spheres & Particles */}
+                <circle cx="90" cy="70" r="16" fill="#38bdf8" opacity="0.6" />
+                <circle cx="340" cy="80" r="22" fill="#0284c7" opacity="0.4" />
+                <circle cx="85" cy="180" r="10" fill="#00c3ff" opacity="0.5" />
+
+                {/* Floating Document Folder / Card Behind */}
+                <g transform="translate(180, 50) rotate(12)">
+                  <rect width="110" height="75" rx="8" fill="#ffffff" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.08))" />
+                  <circle cx="20" cy="20" r="8" fill="#c084fc" opacity="0.7" />
+                  <rect x="35" y="15" width="55" height="4" rx="2" fill="#cbd5e1" />
+                  <rect x="35" y="24" width="40" height="3" rx="1.5" fill="#e2e8f0" />
+                  <rect x="15" y="38" width="80" height="3" rx="1.5" fill="#e2e8f0" />
+                  <rect x="15" y="46" width="60" height="3" rx="1.5" fill="#e2e8f0" />
+                </g>
+
+                {/* Main White Folder Base in Center */}
+                <path
+                  d="M100,165 L170,165 L185,180 L290,180 C296,180 300,184 300,190 L300,280 C300,286 296,290 290,290 L110,290 C104,290 100,286 100,280 Z"
+                  fill="#ffffff"
+                  filter="drop-shadow(0 8px 16px rgba(0,70,140,0.12))"
+                />
+
+                {/* Document Sheets Coming Out of Folder */}
+                <g transform="translate(120, 110) rotate(-6)">
+                  <rect width="90" height="110" rx="6" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1.5" />
+                  <rect x="12" y="18" width="50" height="5" rx="2" fill="#00c3ff" />
+                  <rect x="12" y="30" width="65" height="3" rx="1.5" fill="#94a3b8" />
+                  <rect x="12" y="38" width="65" height="3" rx="1.5" fill="#cbd5e1" />
+                  <rect x="12" y="46" width="55" height="3" rx="1.5" fill="#cbd5e1" />
+                  <rect x="12" y="54" width="60" height="3" rx="1.5" fill="#e2e8f0" />
+                  <rect x="12" y="62" width="45" height="3" rx="1.5" fill="#e2e8f0" />
+                </g>
+
+                {/* Color Palette / Swatch Grid Graphic */}
+                <g transform="translate(180, 140)">
+                  <rect width="60" height="50" rx="5" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+                  <rect x="6" y="8" width="12" height="15" rx="2" fill="#00c3ff" />
+                  <rect x="22" y="8" width="12" height="15" rx="2" fill="#38bdf8" />
+                  <rect x="38" y="8" width="12" height="15" rx="2" fill="#f43f5e" />
+                  <rect x="6" y="27" width="12" height="15" rx="2" fill="#fbbf24" />
+                  <rect x="22" y="27" width="12" height="15" rx="2" fill="#10b981" />
+                  <rect x="38" y="27" width="12" height="15" rx="2" fill="#6366f1" />
+                </g>
+
+                {/* Front White Document Folder Lip */}
+                <path
+                  d="M100,195 L165,195 L180,210 L300,210 L300,285 C300,290 295,295 290,295 L110,295 C105,295 100,290 100,285 Z"
+                  fill="#ffffff"
+                  stroke="#e2e8f0"
+                  strokeWidth="1.5"
+                />
+
+                {/* Cloud Upload Icon Badge on Folder */}
+                <circle cx="170" cy="250" r="22" fill="#00c3ff" />
+                <path
+                  d="M163,253 L170,245 L177,253 M170,246 L170,258"
+                  stroke="#ffffff"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Stylized Human Figure 1 (Behind folder lifting doc) */}
+                <circle cx="235" cy="115" r="9" fill="#fcd34d" />
+                <path d="M225,128 C225,128 235,124 245,128 L240,155 L228,155 Z" fill="#f87171" />
+                <path d="M226,132 L208,110 M242,132 L260,110" stroke="#f87171" strokeWidth="3.5" strokeLinecap="round" />
+
+                {/* Stylized Human Figure 2 (Foreground carrying file) */}
+                {/* Head */}
+                <circle cx="280" cy="180" r="10" fill="#0f172a" />
+                <circle cx="280" cy="183" r="8" fill="#fcd34d" />
+                {/* Torso / Jacket */}
+                <path d="M268,198 C268,194 274,192 280,192 C286,192 292,194 292,198 L288,235 L272,235 Z" fill="url(#charGrad)" />
+                {/* Document in Hand */}
+                <g transform="translate(250, 195) rotate(-15)">
+                  <rect width="28" height="38" rx="3" fill="#ffffff" stroke="#93c5fd" strokeWidth="1.5" />
+                  <rect x="4" y="6" width="18" height="2" fill="#00c3ff" />
+                  <rect x="4" y="12" width="20" height="2" fill="#94a3b8" />
+                  <rect x="4" y="17" width="15" height="2" fill="#cbd5e1" />
+                </g>
+                {/* Arms */}
+                <path d="M270,202 L256,215 M290,202 L276,215" stroke="url(#charGrad)" strokeWidth="4" strokeLinecap="round" />
+                {/* Legs */}
+                <path d="M273,235 L260,285 M287,235 L298,285" stroke="#1e293b" strokeWidth="4.5" strokeLinecap="round" />
+
+                {/* Decorative Botanical Leaf on left */}
+                <path d="M60,280 C65,245 90,240 100,260 C80,270 70,285 60,280 Z" fill="#38bdf8" opacity="0.7" />
+                <path d="M50,290 C55,260 75,255 85,275 C70,282 60,295 50,290 Z" fill="#0284c7" opacity="0.6" />
+              </svg>
             </div>
 
-            <div className="space-y-2">
-              <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                Sistem Informasi Manajemen Terpadu Sekolah
-              </h1>
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-                Pusat data digital UPTD SPF SDN Lanto Dg. Pasewang Kota Makassar untuk tata kelola administrasi guru, perencanaan berbasis data, supervisi, kesiswaan, dan pelaporan terintegrasi.
+            {/* Role highlight pills inside illustration area */}
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <span className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
+                activeRole === 'guru' ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-slate-100 text-slate-500 border-slate-200'
+              }`}>
+                Guru & Tendik
+              </span>
+              <span className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
+                activeRole === 'kepala_sekolah' ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-slate-100 text-slate-500 border-slate-200'
+              }`}>
+                Kepala Sekolah
+              </span>
+              <span className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
+                activeRole === 'admin' ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-slate-100 text-slate-500 border-slate-200'
+              }`}>
+                Admin TU
+              </span>
+            </div>
+          </div>
+
+          {/* Bottom Tagline & Carousel Indicators */}
+          <div className="text-center space-y-3 z-10 pt-2">
+            <p className="text-xs sm:text-sm font-extrabold text-[#00a8e8] tracking-wider uppercase">
+              UPLOAD ANY FILE TO YOUR CLOUD STORAGE
+            </p>
+            <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+              {currentConfig.tagline} • Terintegrasi Google Drive & Firestore
+            </p>
+
+            {/* Pagination / Carousel Indicator Pills (like screenshot) */}
+            <div className="flex items-center justify-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => handleRoleChange('guru')}
+                className={`h-2 rounded-full transition-all cursor-pointer ${
+                  activeRole === 'guru' ? 'w-8 bg-[#00c0ff]' : 'w-2 bg-slate-200 hover:bg-slate-300'
+                }`}
+                title="Pilih Peran Guru"
+              />
+              <button
+                type="button"
+                onClick={() => handleRoleChange('kepala_sekolah')}
+                className={`h-2 rounded-full transition-all cursor-pointer ${
+                  activeRole === 'kepala_sekolah' ? 'w-8 bg-purple-600' : 'w-2 bg-slate-200 hover:bg-slate-300'
+                }`}
+                title="Pilih Peran Kepala Sekolah"
+              />
+              <button
+                type="button"
+                onClick={() => handleRoleChange('admin')}
+                className={`h-2 rounded-full transition-all cursor-pointer ${
+                  activeRole === 'admin' ? 'w-8 bg-rose-500' : 'w-2 bg-slate-200 hover:bg-slate-300'
+                }`}
+                title="Pilih Peran Admin"
+              />
+            </div>
+          </div>
+
+        </div>
+
+
+        {/* ================= RIGHT SIDE: DEDICATED ROLE LOGIN FORM ================= */}
+        <div className="lg:col-span-6 bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
+          
+          <div className="space-y-6">
+            
+            {/* Top Heading */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl sm:text-3xl font-black text-[#00c0ff] tracking-tight">
+                  Welcome to SIM
+                </h1>
+                <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border ${currentConfig.badgeColor}`}>
+                  {currentConfig.badge}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Pilih peran Anda di bawah dan masukkan kredensial untuk mengakses data sekolah & penyimpanan cloud.
               </p>
             </div>
 
-            {/* Feature Highlights Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/60 backdrop-blur-xs flex items-start gap-3">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+            {/* Distinct Role Selection Tabs (ADMIN vs KEPALA SEKOLAH vs GURU) */}
+            <div className="space-y-2">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Pilih Portal Masuk:
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100/90 rounded-2xl">
+                {/* 1. GURU */}
+                <button
+                  id="btn-role-guru"
+                  type="button"
+                  onClick={() => handleRoleChange('guru')}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                    activeRole === 'guru'
+                      ? 'bg-[#00c0ff] text-white shadow-md shadow-[#00c0ff]/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  }`}
+                >
                   <GraduationCap className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-200">Administrasi Guru</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Perangkat ajar, modul ajar, presensi, & e-Supervisi</p>
-                </div>
-              </div>
+                  <span className="text-[11px]">Guru</span>
+                </button>
 
-              <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/60 backdrop-blur-xs flex items-start gap-3">
-                <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
-                  <FileSpreadsheet className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-200">Perencanaan & PBD</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Rapor pendidikan, KSP, RKT, RKAS, & Program Unggulan</p>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/60 backdrop-blur-xs flex items-start gap-3">
-                <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
+                {/* 2. KEPALA SEKOLAH */}
+                <button
+                  id="btn-role-ks"
+                  type="button"
+                  onClick={() => handleRoleChange('kepala_sekolah')}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                    activeRole === 'kepala_sekolah'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  }`}
+                >
                   <Award className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-200">Supervisi Terpadu</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Supervisi akademik 6 indikator & manajerial 8 SNP</p>
-                </div>
-              </div>
+                  <span className="text-[11px]">Kepsek</span>
+                </button>
 
-              <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/60 backdrop-blur-xs flex items-start gap-3">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-200">Kesiswaan & Keuangan</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Data siswa, portofolio prestasi, buku kas BOSP & Sarpras</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick credentials banner */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border border-emerald-500/30 text-emerald-100 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-400/30">
-                <KeyRound className="w-5 h-5" />
-              </div>
-              <div className="text-xs">
-                <span className="font-bold text-emerald-200">Format Akun Guru & PTK:</span>
-                <p className="text-slate-300 text-[11px] mt-0.5">
-                  Gunakan <span className="font-semibold text-white">NIP 18 Digit</span> sebagai Username dan kata sandi standar <span className="font-mono text-emerald-300 font-bold bg-emerald-900/80 px-1.5 py-0.5 rounded border border-emerald-500/30">123456</span>.
-                </p>
+                {/* 3. ADMIN */}
+                <button
+                  id="btn-role-admin"
+                  type="button"
+                  onClick={() => handleRoleChange('admin')}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                    activeRole === 'admin'
+                      ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span className="text-[11px]">Admin</span>
+                </button>
               </div>
             </div>
 
-          </div>
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-start gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+                <span className="leading-relaxed font-medium">{errorMessage}</span>
+              </div>
+            )}
 
-          {/* Right Column: Dedicated Login Form Card */}
-          <div className="lg:col-span-6">
-            <div className="bg-slate-900/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/40 backdrop-blur-xl relative overflow-hidden">
+            {/* Login Form Fields (Styled exactly like reference UI) */}
+            <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* Card Header & Portal Tabs */}
-              <div className="mb-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-                      <LogIn className="w-5 h-5 text-blue-400" />
-                      <span>Masuk Akun SIM</span>
-                    </h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Pilih kategori peran atau masukkan kredensial akun Anda
-                    </p>
-                  </div>
-
-                  <span className="px-2.5 py-1 rounded-xl bg-slate-800 text-slate-300 text-[10px] font-bold border border-slate-700">
-                    TA {profilSekolah?.tahunPelajaran || '2024/2025'}
-                  </span>
+              {/* Field 1: Full Name / Identifier Input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-600">
+                  {currentConfig.inputLabel}
+                </label>
+                <div className="relative">
+                  <input
+                    id="input-login-identifier"
+                    type="text"
+                    value={identifierInput}
+                    onChange={(e) => {
+                      setIdentifierInput(e.target.value);
+                      setErrorMessage(null);
+                    }}
+                    placeholder={currentConfig.inputPlaceholder}
+                    className="w-full px-4 py-3 bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-slate-800 placeholder-slate-400 text-xs font-medium rounded-xl border border-transparent focus:border-[#00c0ff] focus:ring-2 focus:ring-[#00c0ff]/20 outline-none transition-all"
+                    required
+                  />
                 </div>
+              </div>
 
-                {/* Portal Role Selector Tabs */}
-                <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-800/90 rounded-2xl border border-slate-700/70 text-xs">
+              {/* Field 2: Password Input with Eye Toggle */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-600">
+                    Kata Sandi (Password)
+                  </label>
                   <button
-                    id="tab-login-guru"
                     type="button"
-                    onClick={() => handlePortalTabChange('guru')}
-                    className={`py-2 px-2 rounded-xl font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-                      activePortalTab === 'guru'
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-                    }`}
+                    onClick={() => {
+                      setPasswordInput('123456');
+                      setErrorMessage(null);
+                    }}
+                    className="text-[10px] text-[#00a8e8] hover:underline font-semibold cursor-pointer"
                   >
-                    <GraduationCap className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[11px]">Guru</span>
+                    Default: 123456
                   </button>
-
+                </div>
+                <div className="relative">
+                  <input
+                    id="input-login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={passwordInput}
+                    onChange={(e) => {
+                      setPasswordInput(e.target.value);
+                      setErrorMessage(null);
+                    }}
+                    placeholder="••••••••"
+                    className="w-full px-4 pr-11 py-3 bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-slate-800 placeholder-slate-400 text-xs font-mono font-medium rounded-xl border border-transparent focus:border-[#00c0ff] focus:ring-2 focus:ring-[#00c0ff]/20 outline-none transition-all"
+                    required
+                  />
                   <button
-                    id="tab-login-ks"
                     type="button"
-                    onClick={() => handlePortalTabChange('ks')}
-                    className={`py-2 px-2 rounded-xl font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-                      activePortalTab === 'ks'
-                        ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-                    }`}
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                    title={showPassword ? 'Sembunyikan sandi' : 'Lihat sandi'}
                   >
-                    <Award className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[11px]">Kepsek</span>
-                  </button>
-
-                  <button
-                    id="tab-login-admin"
-                    type="button"
-                    onClick={() => handlePortalTabChange('admin')}
-                    className={`py-2 px-2 rounded-xl font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-                      activePortalTab === 'admin'
-                        ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[11px]">Admin</span>
-                  </button>
-
-                  <button
-                    id="tab-login-quick"
-                    type="button"
-                    onClick={() => handlePortalTabChange('quick')}
-                    className={`py-2 px-2 rounded-xl font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-                      activePortalTab === 'quick'
-                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    <Users className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[11px]">1-Klik</span>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              {/* TAB CONTENT 1, 2, 3: STANDARD LOGIN FORM */}
-              {activePortalTab !== 'quick' ? (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {errorMessage && (
-                    <div className="p-3 bg-rose-950/80 border border-rose-600/50 text-rose-200 rounded-xl text-xs flex items-start gap-2.5 animate-in fade-in">
-                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
-                      <div className="leading-relaxed">{errorMessage}</div>
-                    </div>
-                  )}
+              {/* Remember Me */}
+              <div className="flex items-center justify-between text-xs text-slate-500 pt-0.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded bg-slate-100 border-slate-300 text-[#00c0ff] focus:ring-[#00c0ff]"
+                  />
+                  <span className="text-[11px]">Ingat akun saya</span>
+                </label>
 
-                  {/* Identifier Input */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-slate-300">
-                      {activePortalTab === 'guru' ? 'NIP Guru / Username' : activePortalTab === 'ks' ? 'NIP Kepala Sekolah / Email' : 'Username Administrator / Operator'}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                        {activePortalTab === 'guru' ? <GraduationCap className="w-4 h-4" /> : activePortalTab === 'ks' ? <Award className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
-                      </div>
-                      <input
-                        id="login-input-identifier"
-                        type="text"
-                        value={identifierInput}
-                        onChange={(e) => {
-                          setIdentifierInput(e.target.value);
-                          setErrorMessage(null);
-                        }}
-                        placeholder={
-                          activePortalTab === 'guru'
-                            ? 'Contoh: 198503152009022004 atau nama'
-                            : activePortalTab === 'ks'
-                            ? 'Contoh: 196805121990032001'
-                            : 'Contoh: admin / operator'
-                        }
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium"
-                        required
-                      />
-                    </div>
-                  </div>
+                <button
+                  type="button"
+                  onClick={() => setShowQuickPicker(!showQuickPicker)}
+                  className="text-[11px] text-[#00a8e8] font-bold hover:underline cursor-pointer"
+                >
+                  {showQuickPicker ? 'Tutup Daftar Akun' : 'Pilih Akun Guru Lain'}
+                </button>
+              </div>
 
-                  {/* Password Input */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-semibold text-slate-300">
-                        Kata Sandi (Password)
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPasswordInput('123456');
-                          setErrorMessage(null);
-                        }}
-                        className="text-[11px] text-blue-400 hover:text-blue-300 font-medium hover:underline cursor-pointer"
-                      >
-                        Gunakan Default (123456)
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                      <input
-                        id="login-input-password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={passwordInput}
-                        onChange={(e) => {
-                          setPasswordInput(e.target.value);
-                          setErrorMessage(null);
-                        }}
-                        placeholder="Masukkan kata sandi..."
-                        className="w-full pl-10 pr-10 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium font-mono"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
-                        title={showPassword ? 'Sembunyikan' : 'Tampilkan'}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
+              {/* Main Submit Action Button (Vivid Cyan Pill like reference UI) */}
+              <button
+                id="btn-login-submit"
+                type="submit"
+                disabled={isLoading}
+                className={`w-full py-3.5 px-6 font-black rounded-xl text-xs sm:text-sm tracking-wider uppercase transition-all shadow-lg active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed ${
+                  activeRole === 'guru'
+                    ? 'bg-[#00c0ff] hover:bg-[#00abeb] text-white shadow-[#00c0ff]/30'
+                    : activeRole === 'kepala_sekolah'
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/30'
+                    : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/30'
+                }`}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Memproses Masuk...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>MASUK SEBAGAI {activeRole === 'guru' ? 'GURU' : activeRole === 'kepala_sekolah' ? 'KEPALA SEKOLAH' : 'ADMIN'}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
 
-                  {/* Remember Me */}
-                  <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-4 h-4 rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span>Ingat sesi di perangkat ini</span>
-                    </label>
+            </form>
 
-                    <span className="text-[11px] text-slate-400">
-                      Bantuan: <span className="text-slate-300 font-mono">123456</span>
-                    </span>
-                  </div>
-
-                  {/* Submit Button */}
-                  <button
-                    id="btn-submit-login"
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs sm:text-sm shadow-lg shadow-blue-600/30 transition-all transform active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed mt-2"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>Memverifikasi Kredensial...</span>
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="w-4 h-4" />
-                        <span>Masuk ke Sistem Manajemen Sekolah</span>
-                      </>
-                    )}
-                  </button>
-
-                  <div className="pt-2 border-t border-slate-800">
+            {/* Quick User Picker Drawer */}
+            {showQuickPicker && (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 animate-in fade-in zoom-in-95 duration-100">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                  <span>Daftar Cepat Akun PTK Terdaftar:</span>
+                  <span className="text-slate-400">{safeUsers.length} Akun</span>
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                  {safeUsers.map(u => (
                     <button
-                      id="btn-login-google-firebase"
+                      key={u.id}
                       type="button"
-                      onClick={() => loginWithGoogle()}
-                      className="w-full py-2.5 px-3 bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white font-semibold rounded-xl text-xs border border-slate-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      onClick={() => handleSelectUser(u)}
+                      className="w-full p-2 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-left flex items-center justify-between transition-colors cursor-pointer group"
                     >
-                      <Flame className="w-4 h-4 text-amber-400 fill-amber-400" />
-                      <span>{firebaseUser ? `Terkoneksi: ${firebaseUser.displayName || firebaseUser.email}` : 'Masuk / Otorisasi Google Firebase Cloud'}</span>
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                /* TAB CONTENT 4: 1-KLIK CEPAT AKUN TERDAFTAR */
-                <div className="space-y-3">
-                  <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-[11px] text-emerald-200 flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div>
-                      Pilih salah satu profil guru atau staf di bawah untuk <strong>langsung masuk dengan 1-klik</strong> tanpa mengetik manual.
-                    </div>
-                  </div>
-
-                  <div className="max-h-72 overflow-y-auto pr-1 space-y-2">
-                    {users.map((user) => {
-                      const roleBadge = {
-                        admin: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
-                        kepala_sekolah: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-                        guru: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-                        tata_usaha: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                      }[user.role];
-
-                      return (
-                        <div
-                          key={user.id}
-                          className="p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 transition-all flex items-center justify-between gap-3 group"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <div className="text-xs font-bold text-white truncate">
-                                {user.nama}
-                              </div>
-                              <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold border capitalize ${roleBadge}`}>
-                                {user.role.replace('_', ' ')}
-                              </span>
-                            </div>
-                            <div className="text-[11px] text-slate-400 truncate mt-0.5">
-                              {user.jabatan} • <span className="font-mono text-slate-300">NIP: {user.nip || '-'}</span>
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDirectLogin(user)}
-                            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-xs shrink-0 flex items-center gap-1 cursor-pointer"
-                          >
-                            <span>Masuk</span>
-                            <ChevronRight className="w-3 h-3" />
-                          </button>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-800 group-hover:text-blue-700 truncate">
+                          {u.nama}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Quick Select Preset Chips */}
-              {activePortalTab !== 'quick' && (
-                <div className="mt-5 pt-4 border-t border-slate-800 space-y-2">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                    <span>Pilihan Akun Cepat:</span>
-                    <button
-                      type="button"
-                      onClick={() => setActivePortalTab('quick')}
-                      className="text-blue-400 hover:underline cursor-pointer"
-                    >
-                      Lihat Semua ({users.length})
+                        <div className="text-[10px] text-slate-500">
+                          {u.jabatan} • NIP: {u.nip || '-'}
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">
+                        {u.role.replace('_', ' ')}
+                      </span>
                     </button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {/* KS Preset */}
-                    {ksList[0] && (
-                      <button
-                        type="button"
-                        onClick={() => handleSelectUser(ksList[0])}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                      >
-                        <Award className="w-3 h-3 text-purple-400" />
-                        <span>Kepala Sekolah</span>
-                      </button>
-                    )}
-
-                    {/* Guru 1A */}
-                    {guruList.find(g => g.nama.includes('Nurhaliza')) && (
-                      <button
-                        type="button"
-                        onClick={() => handleSelectUser(guruList.find(g => g.nama.includes('Nurhaliza'))!)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                      >
-                        <GraduationCap className="w-3 h-3 text-blue-400" />
-                        <span>Guru 1A (Nurhaliza)</span>
-                      </button>
-                    )}
-
-                    {/* Guru 4B */}
-                    {guruList.find(g => g.nama.includes('Syahrir')) && (
-                      <button
-                        type="button"
-                        onClick={() => handleSelectUser(guruList.find(g => g.nama.includes('Syahrir'))!)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                      >
-                        <GraduationCap className="w-3 h-3 text-emerald-400" />
-                        <span>Guru 4B (Syahrir)</span>
-                      </button>
-                    )}
-
-                    {/* Admin */}
-                    {adminList[0] && (
-                      <button
-                        type="button"
-                        onClick={() => handleSelectUser(adminList[0])}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                      >
-                        <ShieldCheck className="w-3 h-3 text-rose-400" />
-                        <span>Admin SIM</span>
-                      </button>
-                    )}
-                  </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
+            {/* Divider "Or sign up with other account" */}
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink mx-4 text-[11px] text-slate-400 font-medium">
+                Or sign up with other account
+              </span>
+              <div className="flex-grow border-t border-slate-200"></div>
             </div>
+
+            {/* Google / Cloud Storage Login Button */}
+            <div className="space-y-2">
+              <button
+                id="btn-google-cloud-login"
+                type="button"
+                onClick={() => loginWithGoogle()}
+                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer group"
+              >
+                {/* Google G Logo */}
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+                <span>
+                  {firebaseUser
+                    ? `Terkoneksi Google: ${firebaseUser.displayName || firebaseUser.email}`
+                    : 'SIGN UP WITH GOOGLE'}
+                </span>
+              </button>
+            </div>
+
+          </div>
+
+          {/* Bottom Footer Helper Link */}
+          <div className="pt-4 mt-4 border-t border-slate-100 text-center text-xs text-slate-400">
+            <span>Already have an account? </span>
+            <button
+              type="button"
+              onClick={() => {
+                setIdentifierInput('198503152009022004');
+                setPasswordInput('123456');
+                setActiveRole('guru');
+              }}
+              className="text-[#00c0ff] font-bold hover:underline cursor-pointer"
+            >
+              Sign In
+            </button>
           </div>
 
         </div>
-      </main>
 
-      {/* Footer Branding & Copyright */}
-      <footer className="border-t border-slate-800 bg-slate-950/80 px-4 sm:px-8 py-4 text-center text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div>
-            © {new Date().getFullYear()} <strong>UPTD SPF SDN Lanto Dg. Pasewang</strong> Kota Makassar. All Rights Reserved.
-          </div>
-          <div className="flex items-center gap-3 text-[11px] text-slate-400">
-            <span>Dinas Pendidikan Kota Makassar</span>
-            <span>•</span>
-            <span>Provinsi Sulawesi Selatan</span>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 };

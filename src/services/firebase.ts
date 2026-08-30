@@ -7,9 +7,42 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 
 // CRITICAL: Initialize Firestore with the specific database ID
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId || 'ai-studio-manajemendata-67a23658-946b-46e9-bb7d-70d61e36b89d');
 export const auth = getAuth(app);
+
+// Configure GoogleAuthProvider with Google Drive scopes
 export const googleProvider = new GoogleAuthProvider();
+
+export const DRIVE_SCOPES = [
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/drive.activity',
+  'https://www.googleapis.com/auth/drive.activity.readonly',
+  'https://www.googleapis.com/auth/drive.appdata',
+  'https://www.googleapis.com/auth/drive.apps.readonly',
+  'https://www.googleapis.com/auth/drive.install',
+  'https://www.googleapis.com/auth/drive.meet.readonly',
+  'https://www.googleapis.com/auth/drive.metadata',
+  'https://www.googleapis.com/auth/drive.metadata.readonly',
+  'https://www.googleapis.com/auth/drive.photos.readonly',
+  'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/drive.scripts'
+];
+
+DRIVE_SCOPES.forEach(scope => {
+  googleProvider.addScope(scope);
+});
+
+// Cache the access token in memory (never localStorage per guidelines)
+let cachedDriveAccessToken: string | null = null;
+
+export const setCachedDriveAccessToken = (token: string | null) => {
+  cachedDriveAccessToken = token;
+};
+
+export const getCachedDriveAccessToken = (): string | null => {
+  return cachedDriveAccessToken;
+};
 
 export enum OperationType {
   CREATE = 'create',

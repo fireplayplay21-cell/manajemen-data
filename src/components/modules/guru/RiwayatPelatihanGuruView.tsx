@@ -104,9 +104,12 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
     keterangan: ''
   });
 
+  const safeRiwayatList = riwayatPelatihanList || [];
+  const safeUsers = users || [];
+
   // Filtered List
   const filteredList = useMemo(() => {
-    return riwayatPelatihanList.filter(item => {
+    return safeRiwayatList.filter(item => {
       // Search
       const matchSearch =
         searchQuery.trim() === '' ||
@@ -133,21 +136,21 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
 
       return matchSearch && matchGuru && matchPelaksana && matchTahun;
     });
-  }, [riwayatPelatihanList, searchQuery, selectedGuruFilter, selectedPelaksanaFilter, selectedTahunFilter]);
+  }, [safeRiwayatList, searchQuery, selectedGuruFilter, selectedPelaksanaFilter, selectedTahunFilter]);
 
   // Statistics
   const stats = useMemo(() => {
-    const total = riwayatPelatihanList.length;
-    const totalJP = riwayatPelatihanList.reduce((acc, curr) => acc + (curr.jumlahJam || 0), 0);
-    const uniqueTeachers = new Set(riwayatPelatihanList.map(r => r.guruId)).size;
-    const uniqueOrganizers = new Set(riwayatPelatihanList.map(r => r.pelaksana.trim())).size;
+    const total = safeRiwayatList.length;
+    const totalJP = safeRiwayatList.reduce((acc, curr) => acc + (curr.jumlahJam || 0), 0);
+    const uniqueTeachers = new Set(safeRiwayatList.map(r => r.guruId)).size;
+    const uniqueOrganizers = new Set(safeRiwayatList.map(r => r.pelaksana.trim())).size;
     return {
       total,
       totalJP,
       uniqueTeachers,
       uniqueOrganizers
     };
-  }, [riwayatPelatihanList]);
+  }, [safeRiwayatList]);
 
   // Handlers
   const handleOpenAddModal = () => {
@@ -192,7 +195,7 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
 
   const handleGuruChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const gId = e.target.value;
-    const found = users.find(u => u.id === gId);
+    const found = safeUsers.find(u => u.id === gId);
     if (found) {
       setFormData(prev => ({
         ...prev,
@@ -392,7 +395,7 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
                 className="bg-transparent text-xs text-slate-700 font-medium focus:outline-none max-w-[170px]"
               >
                 <option value="Semua">Semua Guru</option>
-                {users.filter(u => u.role === 'guru').map(g => (
+                {safeUsers.filter(u => u.role === 'guru').map(g => (
                   <option key={g.id} value={g.id}>{g.nama}</option>
                 ))}
               </select>
@@ -708,7 +711,7 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:bg-white focus:border-indigo-500 focus:outline-none"
                     required
                   >
-                    {users.filter(u => u.role === 'guru').map(g => (
+                    {safeUsers.filter(u => u.role === 'guru').map(g => (
                       <option key={g.id} value={g.id}>
                         {g.nama} — NIP: {g.nip || '-'} ({g.jabatan})
                       </option>

@@ -27,6 +27,7 @@ import { SarprasView } from './components/modules/sarpras/SarprasView';
 import { KepalaSekolahView } from './components/modules/kepala-sekolah/KepalaSekolahView';
 import { AdministrasiGuruView } from './components/modules/guru/AdministrasiGuruView';
 import { UserManagementView } from './components/modules/user/UserManagementView';
+import { PengaturanAdminView } from './components/modules/pengaturan/PengaturanAdminView';
 import { LoginPage } from './components/modules/auth/LoginPage';
 
 const GURU_ALLOWED_TABS: ActiveTab[] = [
@@ -39,7 +40,7 @@ const GURU_ALLOWED_TABS: ActiveTab[] = [
 ];
 
 const MainContent: React.FC = () => {
-  const { activeTab, setActiveTab, isAuthenticated, currentUser } = useApp();
+  const { activeTab, setActiveTab, isAuthenticated, currentUser, isSidebarCollapsed } = useApp();
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
   // Auto redirect if user is Guru and currently on an unauthorized tab
@@ -121,9 +122,12 @@ const MainContent: React.FC = () => {
       case 'administrasi-ks':
       case 'manajemen-kepala-sekolah':
         return <KepalaSekolahView />;
+      case 'pengaturan':
+      case 'pengaturan-admin':
+      case 'settings':
       case 'enrol-pengguna':
       case 'user-management':
-        return <UserManagementView />;
+        return <PengaturanAdminView />;
       default:
         return <DashboardOverview />;
     }
@@ -132,7 +136,7 @@ const MainContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col antialiased text-slate-800 font-sans">
       <Sidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
-      <div className="lg:pl-80 flex flex-col flex-1 min-h-screen transition-all duration-300">
+      <div className={`${isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-80'} flex flex-col flex-1 min-h-screen transition-all duration-300 ease-in-out`}>
         <Navbar onToggleMobileMenu={() => setIsMobileOpen(!isMobileOpen)} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           {renderActiveView()}

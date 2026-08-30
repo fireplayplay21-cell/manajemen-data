@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, GoogleAuthProvider } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db, auth, googleProvider, signInWithPopup, signOut, handleFirestoreError, OperationType } from '../services/firebase';
+import { setDriveAccessToken } from '../services/driveService';
 import {
   UserAccount,
   UserRole,
@@ -81,6 +82,9 @@ interface AppContextType {
   // Navigation & Role
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: (val: boolean) => void;
+  toggleSidebarCollapse: () => void;
   currentUser: UserAccount;
   setCurrentUser: (user: UserAccount) => void;
   isAuthenticated: boolean;
@@ -302,6 +306,12 @@ function saveToStorage<T>(key: string, data: T) {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    return loadFromStorage<boolean>('isSidebarCollapsed', false);
+  });
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(prev => !prev);
+  };
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return loadFromStorage<boolean>('isAuthenticated', false);
   });
@@ -453,18 +463,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const result = await signInWithPopup(auth, googleProvider);
       if (result.user) {
-        showToast('success', 'Login Firebase Berhasil', `Selamat datang, ${result.user.displayName || result.user.email}! Data tersinkronisasi dengan Firestore.`);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          setDriveAccessToken(credential.accessToken);
+        }
+        showToast('success', 'Login Google & Drive Berhasil', `Selamat datang, ${result.user.displayName || result.user.email}! Akses Google Drive dan sinkronisasi Firestore telah aktif.`);
       }
     } catch (err: unknown) {
-      console.error('Firebase Login Error:', err);
-      showToast('error', 'Login Google Gagal', err instanceof Error ? err.message : 'Tidak dapat login ke Firebase.');
+      console.error('Firebase/Google Login Error:', err);
+      showToast('error', 'Login Google Gagal', err instanceof Error ? err.message : 'Tidak dapat login ke Google.');
     }
   };
 
   const logoutFirebase = async () => {
     try {
       await signOut(auth);
-      showToast('info', 'Logout Firebase', 'Anda telah keluar dari akun Firebase.');
+      setDriveAccessToken(null);
+      showToast('info', 'Logout Google', 'Anda telah keluar dari akun Google & Firebase.');
     } catch (err: unknown) {
       console.error('Firebase Logout Error:', err);
     }
@@ -500,6 +515,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => saveToStorage('keputusanSK', keputusanSKList), [keputusanSKList]);
   useEffect(() => saveToStorage('rencanaPerbaikan', rencanaPerbaikanList), [rencanaPerbaikanList]);
   useEffect(() => saveToStorage('isAuthenticated', isAuthenticated), [isAuthenticated]);
+  useEffect(() => saveToStorage('isSidebarCollapsed', isSidebarCollapsed), [isSidebarCollapsed]);
   useEffect(() => saveToStorage('administrasiGuru', administrasiGuruList), [administrasiGuruList]);
   useEffect(() => saveToStorage('riwayatPelatihan', riwayatPelatihanList), [riwayatPelatihanList]);
 
@@ -616,50 +632,130 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('success', 'Password Direset', 'Password pengguna berhasil direset ke standar default: 123456');
   };
 
-  const syncPTKToUserAccounts = (): { createdCount: number; message: string } => {
-    let createdCount = 0;
-    const existingNips = new Set(users.map(u => (u.nip || '').replace(/\D/g, '')));
-    const existingNames = new Set(users.map(u => u.nama.toLowerCase().trim()));
+  // Normalization helper to link PTK & User accounts by NIP digits or Name
+  const isSamePerson = (
+    a: { nip?: string; nama?: string },
+    b: { nip?: string; nama?: string }
+  ): boolean => {
+    if (!a || !b) return false;
+    const nipA = (a.nip || '').replace(/\D/g, '');
+    const nipB = (b.nip || '').replace(/\D/g, '');
+    if (nipA && nipB && nipA.length >= 6 && nipA === nipB) {
+      return true;
+    }
+    const nameA = (a.nama || '').trim().toLowerCase();
+    const nameB = (b.nama || '').trim().toLowerCase();
+    if (nameA && nameB && nameA === nameB) {
+      return true;
+    }
+    return false;
+  };
 
-    const newAccounts: UserAccount[] = [];
-
-    ptkList.forEach(ptk => {
-      const ptkNipDigits = (ptk.nip || '').replace(/\D/g, '');
-      const isAlreadyUser = (ptkNipDigits && existingNips.has(ptkNipDigits)) || existingNames.has(ptk.nama.toLowerCase().trim());
-
-      if (!isAlreadyUser) {
-        let role: UserRole = 'guru';
-        if (ptk.jabatan.toLowerCase().includes('kepala sekolah')) {
-          role = 'kepala_sekolah';
-        } else if (ptk.jabatan.toLowerCase().includes('administrasi') || ptk.jabatan.toLowerCase().includes('tata usaha') || ptk.jabatan.toLowerCase().includes('bendahara')) {
-          role = 'tata_usaha';
+  // Synchronize photo and profile between PTK and Users on load / change
+  useEffect(() => {
+    // 1. Sync PTK photos to Users if user lacks photo or is different
+    setUsers(prevUsers => {
+      let changed = false;
+      const updated = prevUsers.map(user => {
+        const matchingPTK = ptkList.find(p => isSamePerson(p, user));
+        if (matchingPTK && matchingPTK.foto && user.foto !== matchingPTK.foto) {
+          changed = true;
+          return { ...user, foto: matchingPTK.foto };
         }
-
-        const newAccount: UserAccount = {
-          id: `USR-${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 90 + 10)}`,
-          nama: ptk.nama,
-          nip: ptk.nip || '-',
-          email: ptk.email || `${ptk.nama.toLowerCase().replace(/[^a-z0-9]/g, '')}@sdnlanto.sch.id`,
-          password: '123456',
-          role,
-          jabatan: ptk.jabatan,
-          status: 'Aktif',
-          telepon: ptk.telepon || '081234567890',
-          tanggalEnrol: new Date().toISOString().split('T')[0]
-        };
-
-        newAccounts.push(newAccount);
-        createdCount++;
-      }
+        return user;
+      });
+      return changed ? updated : prevUsers;
     });
 
-    if (newAccounts.length > 0) {
-      setUsers(prev => [...newAccounts, ...prev]);
-      const msg = `Berhasil meng-enrol ${createdCount} akun login Guru & PTK dari database sekolah dengan password default 123456.`;
-      showToast('success', 'Sinkronisasi Akun PTK Berhasil', msg);
+    // 2. Sync User photos to PTK if PTK lacks photo
+    setPtkList(prevPTK => {
+      let changed = false;
+      const updated = prevPTK.map(ptk => {
+        const matchingUser = users.find(u => isSamePerson(u, ptk));
+        if (matchingUser && matchingUser.foto && (!ptk.foto || ptk.foto !== matchingUser.foto)) {
+          changed = true;
+          return { ...ptk, foto: matchingUser.foto };
+        }
+        return ptk;
+      });
+      return changed ? updated : prevPTK;
+    });
+
+    // 3. Keep current logged in user photo up to date
+    setCurrentUser(prevCurrent => {
+      const matchingPTK = ptkList.find(p => isSamePerson(p, prevCurrent));
+      if (matchingPTK && matchingPTK.foto && prevCurrent.foto !== matchingPTK.foto) {
+        return { ...prevCurrent, foto: matchingPTK.foto };
+      }
+      return prevCurrent;
+    });
+  }, [ptkList.length]);
+
+  const syncPTKToUserAccounts = (): { createdCount: number; message: string } => {
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    setUsers(prevUsers => {
+      let currentUsers = [...prevUsers];
+
+      ptkList.forEach(ptk => {
+        const existingIndex = currentUsers.findIndex(u => isSamePerson(ptk, u));
+
+        if (existingIndex >= 0) {
+          // Update existing user with PTK photo and details
+          const existingUser = currentUsers[existingIndex];
+          const hasNewPhoto = ptk.foto && ptk.foto !== existingUser.foto;
+          const hasNewNip = ptk.nip && ptk.nip !== existingUser.nip && existingUser.nip === '-';
+
+          if (hasNewPhoto || hasNewNip) {
+            currentUsers[existingIndex] = {
+              ...existingUser,
+              foto: ptk.foto || existingUser.foto,
+              nip: existingUser.nip && existingUser.nip !== '-' ? existingUser.nip : ptk.nip,
+              jabatan: ptk.jabatan || existingUser.jabatan
+            };
+            updatedCount++;
+          }
+        } else {
+          let role: UserRole = 'guru';
+          if (ptk.jabatan.toLowerCase().includes('kepala sekolah')) {
+            role = 'kepala_sekolah';
+          } else if (
+            ptk.jabatan.toLowerCase().includes('administrasi') ||
+            ptk.jabatan.toLowerCase().includes('tata usaha') ||
+            ptk.jabatan.toLowerCase().includes('bendahara')
+          ) {
+            role = 'tata_usaha';
+          }
+
+          const newAccount: UserAccount = {
+            id: `USR-${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 90 + 10)}`,
+            nama: ptk.nama,
+            nip: ptk.nip || '-',
+            email: ptk.email || `${ptk.nama.toLowerCase().replace(/[^a-z0-9]/g, '')}@sdnlanto.sch.id`,
+            password: '123456',
+            role,
+            jabatan: ptk.jabatan,
+            status: 'Aktif',
+            foto: ptk.foto || '',
+            telepon: ptk.telepon || '081234567890',
+            tanggalEnrol: new Date().toISOString().split('T')[0]
+          };
+
+          currentUsers.push(newAccount);
+          createdCount++;
+        }
+      });
+
+      return currentUsers;
+    });
+
+    if (createdCount > 0 || updatedCount > 0) {
+      const msg = `Sinkronisasi berhasil: ${createdCount} akun baru dienrol, ${updatedCount} foto & profil pengguna diperbarui dari data PTK.`;
+      showToast('success', 'Sinkronisasi PTK & Pengguna', msg);
       return { createdCount, message: msg };
     } else {
-      const msg = 'Semua data PTK sudah terdaftar sebagai akun pengguna login sekolah.';
+      const msg = 'Semua data PTK dan akun pengguna sudah 100% tersinkron beserta pas fotonya.';
       showToast('info', 'Sudah Tersinkron', msg);
       return { createdCount: 0, message: msg };
     }
@@ -671,21 +767,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addUser = (userData: Omit<UserAccount, 'id' | 'tanggalEnrol'>) => {
+    // If matching PTK exists, prioritize syncing photo
+    const matchingPTK = ptkList.find(p => isSamePerson(p, userData));
+    const finalFoto = userData.foto || matchingPTK?.foto || '';
+
     const newUser: UserAccount = {
       ...userData,
+      foto: finalFoto,
       id: `USR-${Date.now().toString().slice(-4)}`,
       tanggalEnrol: new Date().toISOString().split('T')[0]
     };
+
     setUsers(prev => [newUser, ...prev]);
+
+    // If new user has a photo, sync back to PTK if PTK lacks one
+    if (matchingPTK && finalFoto && (!matchingPTK.foto || matchingPTK.foto !== finalFoto)) {
+      setPtkList(prev => prev.map(p => p.id === matchingPTK.id ? { ...p, foto: finalFoto } : p));
+    }
+
     showToast('success', 'Pengguna Terenrol', `Akun ${newUser.nama} (${newUser.role.toUpperCase()}) berhasil ditambahkan.`);
   };
 
   const updateUser = (id: string, userData: Partial<UserAccount>) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...userData } : u));
+    let updatedUser: UserAccount | undefined;
+
+    setUsers(prev => prev.map(u => {
+      if (u.id === id) {
+        const merged = { ...u, ...userData };
+        updatedUser = merged;
+        return merged;
+      }
+      return u;
+    }));
+
     if (currentUser.id === id) {
       setCurrentUser(prev => ({ ...prev, ...userData }));
     }
-    showToast('success', 'Pengguna Diperbarui', 'Data akun pengguna telah diperbarui.');
+
+    // Synchronize changes to matching PTK record in Manajemen Data PTK
+    if (updatedUser) {
+      const target = updatedUser;
+      setPtkList(prev => prev.map(p => {
+        if (isSamePerson(p, target)) {
+          return {
+            ...p,
+            ...(userData.nama ? { nama: userData.nama } : {}),
+            ...(userData.nip ? { nip: userData.nip } : {}),
+            ...(userData.foto !== undefined ? { foto: userData.foto } : {}),
+            ...(userData.email ? { email: userData.email } : {}),
+            ...(userData.telepon ? { telepon: userData.telepon } : {}),
+            ...(userData.jabatan ? { jabatan: userData.jabatan } : {})
+          };
+        }
+        return p;
+      }));
+    }
+
+    showToast('success', 'Pengguna Diperbarui', 'Data akun pengguna dan foto profil berhasil diperbarui & disinkronkan ke PTK.');
   };
 
   const deleteUser = (id: string) => {
@@ -724,10 +862,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  // Specialized PTK operations with instant bidirectional sync to User Accounts
+  const addPTK = (item: Omit<PTKRecord, 'id'>) => {
+    const newPTK: PTKRecord = {
+      ...item,
+      id: `PTK-${Date.now().toString().slice(-4)}`
+    };
+    setPtkList(prev => [newPTK, ...prev]);
+
+    // If matching User exists, sync photo and details
+    setUsers(prev => prev.map(u => {
+      if (isSamePerson(newPTK, u)) {
+        return {
+          ...u,
+          ...(newPTK.foto ? { foto: newPTK.foto } : {}),
+          ...(newPTK.nip ? { nip: newPTK.nip } : {}),
+          ...(newPTK.nama ? { nama: newPTK.nama } : {}),
+          ...(newPTK.jabatan ? { jabatan: newPTK.jabatan } : {})
+        };
+      }
+      return u;
+    }));
+
+    showToast('success', 'PTK Ditambahkan', `Data PTK ${newPTK.nama} berhasil ditambahkan dan disinkronkan.`);
+  };
+
+  const updatePTK = (id: string, item: Partial<PTKRecord>) => {
+    let updatedPTK: PTKRecord | undefined;
+
+    setPtkList(prev => prev.map(p => {
+      if (p.id === id) {
+        const merged = { ...p, ...item };
+        updatedPTK = merged;
+        return merged;
+      }
+      return p;
+    }));
+
+    // Synchronize to matching User account in Enrol Pengguna
+    if (updatedPTK) {
+      const target = updatedPTK;
+      setUsers(prev => prev.map(u => {
+        if (isSamePerson(target, u) || (item.nip && isSamePerson({ nip: item.nip, nama: item.nama || target.nama }, u))) {
+          return {
+            ...u,
+            ...(item.nama ? { nama: item.nama } : {}),
+            ...(item.nip ? { nip: item.nip } : {}),
+            ...(item.foto !== undefined ? { foto: item.foto } : {}),
+            ...(item.email ? { email: item.email } : {}),
+            ...(item.telepon ? { telepon: item.telepon } : {}),
+            ...(item.jabatan ? { jabatan: item.jabatan } : {})
+          };
+        }
+        return u;
+      }));
+
+      // If current logged-in user is this PTK, update currentUser
+      setCurrentUser(prev => {
+        if (isSamePerson(target, prev)) {
+          return {
+            ...prev,
+            ...(item.nama ? { nama: item.nama } : {}),
+            ...(item.nip ? { nip: item.nip } : {}),
+            ...(item.foto !== undefined ? { foto: item.foto } : {}),
+            ...(item.email ? { email: item.email } : {}),
+            ...(item.telepon ? { telepon: item.telepon } : {}),
+            ...(item.jabatan ? { jabatan: item.jabatan } : {})
+          };
+        }
+        return prev;
+      });
+    }
+
+    showToast('success', 'Data PTK Diperbarui', 'Data dan pas foto PTK berhasil disimpan & otomatis disinkronkan ke akun login.');
+  };
+
+  const deletePTK = (id: string) => {
+    setPtkList(prev => prev.filter(el => el.id !== id));
+    showToast('info', 'Data Dihapus', 'Data PTK berhasil dihapus.');
+  };
+
   const perencanaanCRUD = createCRUD<DokumenPerencanaan>(setPerencanaanList, 'Perencanaan', 'DOC');
   const pbdCRUD = createCRUD<IndikatorRaporPendidikan>(setPbdList, 'Perencanaan Berbasis Data', 'PBD');
   const programUnggulanCRUD = createCRUD<ProgramUnggulan>(setProgramUnggulanList, 'Program Unggulan', 'PRG');
-  const ptkCRUD = createCRUD<PTKRecord>(setPtkList, 'PTK & Tenaga Kependidikan', 'PTK');
   const kelasCRUD = createCRUD<KelasRecord>(setKelasList, 'Data Kelas', 'KLS');
   const suratCRUD = createCRUD<SuratRecord>(setSuratList, 'Persuratan', 'SRT');
   const mouCRUD = createCRUD<MOUKerjasama>(setMouList, 'MOU Kerjasama', 'MOU');
@@ -928,6 +1145,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         activeTab,
         setActiveTab,
+        isSidebarCollapsed,
+        setIsSidebarCollapsed,
+        toggleSidebarCollapse,
         currentUser,
         setCurrentUser,
         isAuthenticated,
@@ -996,9 +1216,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateProgramUnggulan: programUnggulanCRUD.update,
         deleteProgramUnggulan: programUnggulanCRUD.delete,
 
-        addPTK: ptkCRUD.add,
-        updatePTK: ptkCRUD.update,
-        deletePTK: ptkCRUD.delete,
+        addPTK,
+        updatePTK,
+        deletePTK,
 
         addKelas: kelasCRUD.add,
         updateKelas: kelasCRUD.update,

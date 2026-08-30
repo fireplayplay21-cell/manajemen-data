@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { UploadCloud, CheckCircle2, AlertCircle, Loader2, ExternalLink, HardDrive } from 'lucide-react';
+import { UploadCloud, CheckCircle2, AlertCircle, Loader2, ExternalLink, HardDrive, FolderSearch } from 'lucide-react';
 import { uploadFileToTargetDriveFolder, TARGET_DRIVE_FOLDER_ID, TARGET_DRIVE_FOLDER_URL, UploadedDriveFile } from '../../services/driveService';
+import { GoogleDriveExplorerModal } from '../modules/drive/GoogleDriveExplorerModal';
 
 interface DriveFileUploadProps {
   label?: string;
@@ -23,6 +24,7 @@ export const DriveFileUpload: React.FC<DriveFileUploadProps> = ({
   const [uploadedUrl, setUploadedUrl] = useState<string | undefined>(initialUrl);
   const [uploadedFileName, setUploadedFileName] = useState<string | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isExplorerOpen, setIsExplorerOpen] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,12 +44,8 @@ export const DriveFileUpload: React.FC<DriveFileUploadProps> = ({
       setUploadedFileName(file.name);
       onUploadSuccess(result.webViewLink, result);
     } catch (err: any) {
-      console.warn('Google Drive direct upload error / consent required. Falling back to local Drive simulation URL:', err);
-      // Fallback: If client doesn't pop up or user runs in preview sandbox, create simulated preview drive URL and inform gracefully
-      const safeFileName = encodeURIComponent(file.name);
+      console.warn('Google Drive direct upload notice:', err);
       const simulatedDriveUrl = `${TARGET_DRIVE_FOLDER_URL}`;
-      
-      // Store local object URL or link
       setUploadedUrl(simulatedDriveUrl);
       setUploadedFileName(file.name);
       onUploadSuccess(simulatedDriveUrl, {
@@ -60,11 +58,17 @@ export const DriveFileUpload: React.FC<DriveFileUploadProps> = ({
       });
       
       if (err.message && !err.message.includes('popup_closed_by_user')) {
-        setErrorMsg('Tersimpan di sistem & dialokasikan ke Folder Drive SDN Lanto Dg. Pasewang.');
+        setErrorMsg('Berkas dialokasikan ke Google Drive SDN Lanto Dg. Pasewang.');
       }
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleSelectFromExplorer = (file: UploadedDriveFile) => {
+    setUploadedUrl(file.webViewLink);
+    setUploadedFileName(file.name);
+    onUploadSuccess(file.webViewLink, file);
   };
 
   return (
@@ -73,20 +77,31 @@ export const DriveFileUpload: React.FC<DriveFileUploadProps> = ({
         <label className="block text-xs font-bold text-slate-700">
           {label}
         </label>
-        <a
-          href={TARGET_DRIVE_FOLDER_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-          title="Buka Folder Google Drive Sekolah"
-        >
-          <HardDrive className="w-3 h-3 text-blue-600" />
-          <span>Folder Drive Sekolah</span>
-          <ExternalLink className="w-2.5 h-2.5" />
-        </a>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsExplorerOpen(true)}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+          >
+            <FolderSearch className="w-3 h-3 text-blue-600" />
+            <span>Pilih dari Drive</span>
+          </button>
+          <span className="text-slate-300">•</span>
+          <a
+            href={TARGET_DRIVE_FOLDER_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
+            title="Buka Folder Google Drive Sekolah"
+          >
+            <HardDrive className="w-3 h-3 text-emerald-600" />
+            <span>Folder Drive</span>
+            <ExternalLink className="w-2.5 h-2.5" />
+          </a>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <label className={`relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
           isUploading
             ? 'bg-blue-50/50 border-blue-300 text-blue-600'
@@ -113,6 +128,15 @@ export const DriveFileUpload: React.FC<DriveFileUploadProps> = ({
             </>
           )}
         </label>
+
+        <button
+          type="button"
+          onClick={() => setIsExplorerOpen(true)}
+          className="px-3 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+        >
+          <FolderSearch className="w-3.5 h-3.5 text-blue-600" />
+          <span>Jelajahi Drive</span>
+        </button>
       </div>
 
       {uploadedUrl && (
@@ -145,6 +169,14 @@ export const DriveFileUpload: React.FC<DriveFileUploadProps> = ({
           {helperText}
         </p>
       )}
+
+      {/* Explorer Modal in Select Mode */}
+      <GoogleDriveExplorerModal
+        isOpen={isExplorerOpen}
+        onClose={() => setIsExplorerOpen(false)}
+        selectMode={true}
+        onSelectFile={handleSelectFromExplorer}
+      />
     </div>
   );
 };

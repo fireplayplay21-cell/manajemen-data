@@ -38,7 +38,7 @@ const SEMESTER_OPTIONS = [
 ];
 
 export const ProfilSekolahView: React.FC = () => {
-  const { profilSekolah, updateProfilSekolah, currentUser } = useApp();
+  const { profilSekolah, updateProfilSekolah, currentUser, setActiveTab } = useApp();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [formData, setFormData] = useState<ProfilSekolah>(profilSekolah);
   const [isCustomTahun, setIsCustomTahun] = useState(false);
@@ -63,8 +63,16 @@ export const ProfilSekolahView: React.FC = () => {
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white rounded-2xl border border-slate-200 shadow-xs">
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
-            <Building2 className="w-8 h-8" />
+          <div className="w-16 h-16 rounded-2xl bg-white border-2 border-slate-200 p-1.5 flex items-center justify-center shadow-md shadow-blue-500/10 shrink-0 overflow-hidden">
+            {profilSekolah.logoUrl ? (
+              <img
+                src={profilSekolah.logoUrl}
+                alt="Logo Sekolah"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <Building2 className="w-8 h-8 text-blue-600" />
+            )}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-1.5 mb-1">
@@ -90,15 +98,30 @@ export const ProfilSekolahView: React.FC = () => {
         </div>
 
         {canEdit && (
-          <button
-            id="btn-edit-profil-sekolah"
-            type="button"
-            onClick={handleOpenEdit}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer"
-          >
-            <Edit className="w-4 h-4" />
-            <span>Edit Data Profil</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {currentUser.role === 'admin' && (
+              <button
+                type="button"
+                id="btn-nav-to-logo-branding"
+                onClick={() => setActiveTab('pengaturan')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition-colors shrink-0 cursor-pointer shadow-xs"
+                title="Buka Pengaturan Logo & Branding Sekolah"
+              >
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+                <span>Atur Logo & Branding</span>
+              </button>
+            )}
+
+            <button
+              id="btn-edit-profil-sekolah"
+              type="button"
+              onClick={handleOpenEdit}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer"
+            >
+              <Edit className="w-4 h-4" />
+              <span>Edit Data Profil</span>
+            </button>
+          </div>
         )}
       </div>
 

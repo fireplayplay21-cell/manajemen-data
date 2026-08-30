@@ -66,7 +66,11 @@ export const initialProfilSekolah: ProfilSekolah = {
   ],
   semboyan: 'Sipakatau, Sipakalebbi, Sipakainge - Unggul dalam Prestasi, Santun dalam Pekerti',
   tahunPelajaran: '2024/2025',
-  semester: 'Semester Ganjil'
+  semester: 'Semester Ganjil',
+  logoUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=300',
+  logoDinasUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Coat_of_arms_of_Makassar.svg/240px-Coat_of_arms_of_Makassar.svg.png',
+  tutWuriLogoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Logo_Tut_Wuri_Handayani.png/300px-Logo_Tut_Wuri_Handayani.png',
+  stempelUrl: ''
 };
 
 export const initialUsers: UserAccount[] = [
@@ -79,6 +83,7 @@ export const initialUsers: UserAccount[] = [
     role: 'admin',
     jabatan: 'Admin Sistem & Operator Dapodik',
     status: 'Aktif',
+    foto: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
     telepon: '081245678901',
     tanggalEnrol: '2024-01-05'
   },
@@ -91,6 +96,7 @@ export const initialUsers: UserAccount[] = [
     role: 'kepala_sekolah',
     jabatan: 'Kepala Sekolah',
     status: 'Aktif',
+    foto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
     telepon: '081342119988',
     tanggalEnrol: '2023-07-10'
   },
@@ -104,6 +110,7 @@ export const initialUsers: UserAccount[] = [
     jabatan: 'Guru Kelas 1A (Fase A)',
     kelasTugas: 'Kelas 1A',
     status: 'Aktif',
+    foto: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80',
     telepon: '085299443322',
     tanggalEnrol: '2024-07-15'
   },
@@ -117,6 +124,7 @@ export const initialUsers: UserAccount[] = [
     jabatan: 'Guru Kelas 4B (Fase B)',
     kelasTugas: 'Kelas 4B',
     status: 'Aktif',
+    foto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
     telepon: '082188776655',
     tanggalEnrol: '2024-07-15'
   },
@@ -130,6 +138,7 @@ export const initialUsers: UserAccount[] = [
     jabatan: 'Guru Pendidikan Agama Islam',
     mataPelajaran: 'Pendidikan Agama Islam & BP',
     status: 'Aktif',
+    foto: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&auto=format&fit=crop&q=80',
     telepon: '085341223344',
     tanggalEnrol: '2024-07-15'
   },
@@ -143,6 +152,7 @@ export const initialUsers: UserAccount[] = [
     jabatan: 'Guru PJOK & Pembina Ekskul',
     mataPelajaran: 'Pendidikan Jasmani Olahraga & Kesehatan',
     status: 'Aktif',
+    foto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
     telepon: '081290334455',
     tanggalEnrol: '2024-07-18'
   },
@@ -155,6 +165,7 @@ export const initialUsers: UserAccount[] = [
     role: 'tata_usaha',
     jabatan: 'Bendahara BOSP & Staf Tata Usaha',
     status: 'Aktif',
+    foto: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
     telepon: '085211998877',
     tanggalEnrol: '2024-07-20'
   }
@@ -373,7 +384,8 @@ export const initialPTK: PTKRecord[] = [
     statusKepegawaian: 'PNS',
     sertifikasi: 'Sudah Sertifikasi',
     email: 'rosdiana.sdn@makassar.sch.id',
-    telepon: '081342119988'
+    telepon: '081342119988',
+    foto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
   },
   {
     id: 'PTK-02',
@@ -388,7 +400,8 @@ export const initialPTK: PTKRecord[] = [
     statusKepegawaian: 'PNS',
     sertifikasi: 'Sudah Sertifikasi',
     email: 'nurhaliza.guru@sd.belajar.id',
-    telepon: '085299443322'
+    telepon: '085299443322',
+    foto: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80'
   },
   {
     id: 'PTK-03',
@@ -403,7 +416,8 @@ export const initialPTK: PTKRecord[] = [
     statusKepegawaian: 'PNS',
     sertifikasi: 'Sudah Sertifikasi',
     email: 'syahrir.guru@sd.belajar.id',
-    telepon: '082188776655'
+    telepon: '082188776655',
+    foto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
   },
   {
     id: 'PTK-04',
@@ -418,7 +432,8 @@ export const initialPTK: PTKRecord[] = [
     statusKepegawaian: 'PNS',
     sertifikasi: 'Sudah Sertifikasi',
     email: 'fatimah.pai@sd.belajar.id',
-    telepon: '085341223344'
+    telepon: '085341223344',
+    foto: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&auto=format&fit=crop&q=80'
   },
   {
     id: 'PTK-05',
@@ -433,7 +448,8 @@ export const initialPTK: PTKRecord[] = [
     statusKepegawaian: 'PPPK',
     sertifikasi: 'Sudah Sertifikasi',
     email: 'kurniawan.pjok@sd.belajar.id',
-    telepon: '081290334455'
+    telepon: '081290334455',
+    foto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80'
   },
   {
     id: 'PTK-06',
@@ -448,7 +464,8 @@ export const initialPTK: PTKRecord[] = [
     statusKepegawaian: 'PPPK',
     sertifikasi: 'Belum Sertifikasi',
     email: 'tu.nurul@makassar.sch.id',
-    telepon: '085211998877'
+    telepon: '085211998877',
+    foto: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80'
   }
 ];
 
