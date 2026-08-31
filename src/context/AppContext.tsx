@@ -29,6 +29,7 @@ import {
   PemeliharaanSarpras,
   PeminjamanSarpras,
   AgendaHarianKS,
+  AgendaRapat,
   BukuTamu,
   JurnalKepemimpinan,
   KeputusanSK,
@@ -66,6 +67,7 @@ import {
   initialPemeliharaan,
   initialPeminjaman,
   initialAgendaKS,
+  initialAgendaRapat,
   initialBukuTamu,
   initialJurnalKepemimpinan,
   initialKeputusanSK,
@@ -131,6 +133,7 @@ interface AppContextType {
   pemeliharaanList: PemeliharaanSarpras[];
   peminjamanList: PeminjamanSarpras[];
   agendaKSList: AgendaHarianKS[];
+  agendaRapatList: AgendaRapat[];
   bukuTamuList: BukuTamu[];
   jurnalKSList: JurnalKepemimpinan[];
   keputusanSKList: KeputusanSK[];
@@ -256,6 +259,10 @@ interface AppContextType {
   updateAgendaKS: (id: string, item: Partial<AgendaHarianKS>) => void;
   deleteAgendaKS: (id: string) => void;
 
+  addAgendaRapat: (item: Omit<AgendaRapat, 'id'>) => void;
+  updateAgendaRapat: (id: string, item: Partial<AgendaRapat>) => void;
+  deleteAgendaRapat: (id: string) => void;
+
   addBukuTamu: (item: Omit<BukuTamu, 'id'>) => void;
   updateBukuTamu: (id: string, item: Partial<BukuTamu>) => void;
   deleteBukuTamu: (id: string) => void;
@@ -361,6 +368,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pemeliharaanList, setPemeliharaanList] = useState<PemeliharaanSarpras[]>(() => loadFromStorage('pemeliharaan', initialPemeliharaan));
   const [peminjamanList, setPeminjamanList] = useState<PeminjamanSarpras[]>(() => loadFromStorage('peminjaman', initialPeminjaman));
   const [agendaKSList, setAgendaKSList] = useState<AgendaHarianKS[]>(() => loadFromStorage('agendaKS', initialAgendaKS));
+  const [agendaRapatList, setAgendaRapatList] = useState<AgendaRapat[]>(() => loadFromStorage('agendaRapat', initialAgendaRapat));
   const [bukuTamuList, setBukuTamuList] = useState<BukuTamu[]>(() => loadFromStorage('bukuTamu', initialBukuTamu));
   const [jurnalKSList, setJurnalKSList] = useState<JurnalKepemimpinan[]>(() => loadFromStorage('jurnalKS', initialJurnalKepemimpinan));
   const [keputusanSKList, setKeputusanSKList] = useState<KeputusanSK[]>(() => loadFromStorage('keputusanSK', initialKeputusanSK));
@@ -417,6 +425,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (Array.isArray(cloudData.pemeliharaanList)) setPemeliharaanList(cloudData.pemeliharaanList);
         if (Array.isArray(cloudData.peminjamanList)) setPeminjamanList(cloudData.peminjamanList);
         if (Array.isArray(cloudData.agendaKSList)) setAgendaKSList(cloudData.agendaKSList);
+        if (Array.isArray(cloudData.agendaRapatList)) setAgendaRapatList(cloudData.agendaRapatList);
         if (Array.isArray(cloudData.bukuTamuList)) setBukuTamuList(cloudData.bukuTamuList);
         if (Array.isArray(cloudData.jurnalKSList)) setJurnalKSList(cloudData.jurnalKSList);
         if (Array.isArray(cloudData.keputusanSKList)) setKeputusanSKList(cloudData.keputusanSKList);
@@ -452,6 +461,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           pemeliharaanList,
           peminjamanList,
           agendaKSList,
+          agendaRapatList,
           bukuTamuList,
           jurnalKSList,
           keputusanSKList,
@@ -525,6 +535,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => saveToStorage('pemeliharaan', pemeliharaanList), [pemeliharaanList]);
   useEffect(() => saveToStorage('peminjaman', peminjamanList), [peminjamanList]);
   useEffect(() => saveToStorage('agendaKS', agendaKSList), [agendaKSList]);
+  useEffect(() => saveToStorage('agendaRapat', agendaRapatList), [agendaRapatList]);
   useEffect(() => saveToStorage('bukuTamu', bukuTamuList), [bukuTamuList]);
   useEffect(() => saveToStorage('jurnalKS', jurnalKSList), [jurnalKSList]);
   useEffect(() => saveToStorage('keputusanSK', keputusanSKList), [keputusanSKList]);
@@ -993,6 +1004,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const pemeliharaanCRUD = createCRUD<PemeliharaanSarpras>(setPemeliharaanList, 'Pemeliharaan Sarpras', 'MNT');
   const peminjamanCRUD = createCRUD<PeminjamanSarpras>(setPeminjamanList, 'Peminjaman Sarpras', 'PINJ');
   const agendaKSCRUD = createCRUD<AgendaHarianKS>(setAgendaKSList, 'Agenda Kepala Sekolah', 'AGD');
+  const agendaRapatCRUD = createCRUD<AgendaRapat>(setAgendaRapatList, 'Agenda Rapat Pegawai', 'RPT');
   const bukuTamuCRUD = createCRUD<BukuTamu>(setBukuTamuList, 'Buku Tamu', 'TMU');
   const jurnalKSCRUD = createCRUD<JurnalKepemimpinan>(setJurnalKSList, 'Jurnal Kepemimpinan', 'JRN');
   const keputusanSKCRUD = createCRUD<KeputusanSK>(setKeputusanSKList, 'Keputusan & SK', 'SK');
@@ -1519,6 +1531,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPemeliharaanList(initialPemeliharaan);
     setPeminjamanList(initialPeminjaman);
     setAgendaKSList(initialAgendaKS);
+    setAgendaRapatList(initialAgendaRapat);
     setBukuTamuList(initialBukuTamu);
     setJurnalKSList(initialJurnalKepemimpinan);
     setKeputusanSKList(initialKeputusanSK);
@@ -1571,6 +1584,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         pemeliharaanList: Array.isArray(pemeliharaanList) ? pemeliharaanList : initialPemeliharaan,
         peminjamanList: Array.isArray(peminjamanList) ? peminjamanList : initialPeminjaman,
         agendaKSList: Array.isArray(agendaKSList) ? agendaKSList : initialAgendaKS,
+        agendaRapatList: Array.isArray(agendaRapatList) ? agendaRapatList : initialAgendaRapat,
         bukuTamuList: Array.isArray(bukuTamuList) ? bukuTamuList : initialBukuTamu,
         jurnalKSList: Array.isArray(jurnalKSList) ? jurnalKSList : initialJurnalKepemimpinan,
         keputusanSKList: Array.isArray(keputusanSKList) ? keputusanSKList : initialKeputusanSK,
@@ -1684,6 +1698,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addAgendaKS: agendaKSCRUD.add,
         updateAgendaKS: agendaKSCRUD.update,
         deleteAgendaKS: agendaKSCRUD.delete,
+
+        addAgendaRapat: agendaRapatCRUD.add,
+        updateAgendaRapat: agendaRapatCRUD.update,
+        deleteAgendaRapat: agendaRapatCRUD.delete,
 
         addBukuTamu: bukuTamuCRUD.add,
         updateBukuTamu: bukuTamuCRUD.update,

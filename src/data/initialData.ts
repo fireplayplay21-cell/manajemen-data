@@ -22,6 +22,7 @@ import {
   PemeliharaanSarpras,
   PeminjamanSarpras,
   AgendaHarianKS,
+  AgendaRapat,
   BukuTamu,
   JurnalKepemimpinan,
   KeputusanSK,
@@ -1538,6 +1539,171 @@ export const initialAgendaKS: AgendaHarianKS[] = [
     pihakTerlibat: 'Seluruh Kepala SD Se-Kecamatan Mamajang & Pengawas Pembina',
     outputHasil: 'Penyamaan persepsi petunjuk teknis pelaksanaan ANBK dan BOSP 2024.',
     status: 'Rencana'
+  }
+];
+
+export const initialAgendaRapat: AgendaRapat[] = [
+  {
+    id: 'RPT-01',
+    nomorSuratUndangan: '421.2/088/SDN-LDP/VII/2024',
+    judulRapat: 'Rapat Dinas Dewan Guru & Penetapan Pembagian Tugas Tahun Ajaran 2024/2025',
+    kategori: 'Rapat Dinas / Dewan Guru',
+    hariTanggal: 'Senin, 08 Juli 2024',
+    waktu: '08.30 - 12.00 WITA',
+    tempat: 'Ruang Guru / Aula UPTD SPF SDN Lanto Dg. Pasewang',
+    pimpinanRapat: 'Dra. Hj. Rosdiana, M.Pd. (Kepala Sekolah)',
+    notulis: 'Salafi Artika Dini, S.Pd',
+    pesertaSasaran: 'Seluruh Dewan Guru & Tenaga Kependidikan (16 Pegawai)',
+    status: 'Selesai',
+    urgensi: 'Penting',
+    agendaPembahasan: [
+      'Evaluasi capaian program dan pembelajaran semester sebelumnya',
+      'Penetapan pembagian tugas mengajar 24 JP, wali kelas, dan tugas tambahan',
+      'Penyelarasan Kurikulum Operasional Satuan Pendidikan (KSP) Kurikulum Merdeka',
+      'Persiapan Masa Pengenalan Lingkungan Sekolah (MPLS) Ramah Anak 2024'
+    ],
+    deskripsi: 'Rapat dinas awal tahun ajaran untuk menetapkan pembagian tugas kerja guru, jadwal KBM terpadu, dan kesiapan administrasi perangkat ajar.',
+    notulenHasil: 'Rapat diawali sambutan dan arahan Kepala Sekolah mengenai disiplin ASN/Non-ASN dan budaya 5S Tabik. Semua guru menyetujui penugasan wali kelas dan jadwal KBM. Penyusunan modul ajar difasilitasi dalam forum Komunitas Belajar mingguan.',
+    keputusanRapat: [
+      'KBM resmi dimulai serentak pada hari Senin, 15 Juli 2024',
+      'Seluruh guru mengunggah Modul Ajar dan CP/TP ke portal sistem paling lambat 20 Juli 2024',
+      'Pembentukan Pokja Tim Pencegahan dan Penanganan Kekerasan (TPPK) Sekolah',
+      'Pelaksanaan program unggulan Kamis Mengaji dan Senam Tabik berjalan rutin'
+    ],
+    daftarHadirJumlah: {
+      totalUndangan: 16,
+      hadir: 16,
+      izin: 0,
+      sakit: 0
+    },
+    dilihatSemuaPegawai: true,
+    fileUndanganUrl: 'https://drive.google.com/file/d/sample-undangan-rapat-dinas/view',
+    fileNotulenUrl: 'https://drive.google.com/file/d/sample-notulen-rapat-dinas/view'
+  },
+  {
+    id: 'RPT-02',
+    nomorSuratUndangan: '421.2/104/SDN-LDP/VIII/2024',
+    judulRapat: 'Rapat Koordinasi Kesiapan ANBK & Simulasi Literasi-Numerasi Kelas 5',
+    kategori: 'Rapat Evaluasi Kurikulum',
+    hariTanggal: 'Selasa, 20 Agustus 2024',
+    waktu: '13.00 - 15.30 WITA',
+    tempat: 'Laboratorium Komputer / Chromebook UPTD SPF SDN Lanto Dg. Pasewang',
+    pimpinanRapat: 'Dra. Hj. Rosdiana, M.Pd. (Kepala Sekolah)',
+    notulis: 'Rismawati, S.Pd.',
+    pesertaSasaran: 'Proktor ANBK, Teknisi, Guru Kelas 5A & 5B, dan Guru Mapel',
+    status: 'Selesai',
+    urgensi: 'Penting',
+    agendaPembahasan: [
+      'Pengecekan kesiapan 30 unit laptop Chromebook bantuan Kemendikbudristek',
+      'Verifikasi stabilitas jaringan internet dan kelistrikan genset cadangan',
+      'Jadwal simulasi mandiri dan gladi bersih ANBK murid kelas 5',
+      'Pembiasaan drill soal HOTS AKM Literasi dan Numerasi'
+    ],
+    deskripsi: 'Koordinasi teknis dan pedagogik untuk memastikan 100% kesiapan sarana IT dan mental peserta didik dalam menghadapi Asesmen Nasional Berbasis Komputer.',
+    notulenHasil: 'Proktor melaporkan 30 chromebook telah lolos uji exambrowser client. Sinyal bandwidth 100 Mbps stabil. Guru kelas 5 menyepakati drill latihan soal AKM dua kali seminggu setiap hari Selasa dan Kamis.',
+    keputusanRapat: [
+      'Gladi bersih ANBK dilaksanakan pada 26 - 28 Agustus 2024 dibagi 2 sesi per hari',
+      'Guru kelas 5 mendampingi pengenalan antarmuka ujian bagi siswa yang belum terbiasa mengetik',
+      'Penyediaan konsumsi panitia dan proktor diakomodasi melalui anggaran BOSP'
+    ],
+    daftarHadirJumlah: {
+      totalUndangan: 8,
+      hadir: 8,
+      izin: 0,
+      sakit: 0
+    },
+    dilihatSemuaPegawai: true,
+    fileMateriUrl: 'https://drive.google.com/file/d/sample-juknis-anbk-2024/view'
+  },
+  {
+    id: 'RPT-03',
+    nomorSuratUndangan: '421.2/112/SDN-LDP/IX/2024',
+    judulRapat: 'Rapat Koordinasi Evaluasi Supervisi Akademik & Penguatan Diferensiasi',
+    kategori: 'Rapat Dinas / Dewan Guru',
+    hariTanggal: 'Senin, 02 September 2024',
+    waktu: '10.00 - 12.30 WITA',
+    tempat: 'Ruang Guru SDN Lanto Dg. Pasewang',
+    pimpinanRapat: 'Dra. Hj. Rosdiana, M.Pd. (Kepala Sekolah)',
+    notulis: 'Nurfadilah, S.Pd.',
+    pesertaSasaran: 'Seluruh Dewan Guru Kelas 1 - 6 dan Guru PJOK/PABP',
+    status: 'Selesai',
+    urgensi: 'Biasa',
+    agendaPembahasan: [
+      'Diseminasi hasil observasi supervisi akademik 5 komponen inti pembelajaran',
+      'Penguatan strategi pembelajaran berdiferensiasi konten, proses, dan produk',
+      'Pemanfaatan media TIK interaktif Canva dan Quizizz dalam asesmen formatif',
+      'Rencana tindak lanjut (RTL) pembinaan pasca-observasi'
+    ],
+    deskripsi: 'Evaluasi berkala terhadap implementasi pedagogik guru di kelas serta refleksi bersama demi peningkatan kualitas proses belajar mengajar.',
+    notulenHasil: 'Sebagian besar guru telah mengintegrasikan pembelajaran kontekstual dengan baik (skor rata-rata di atas 88). Fokus perbaikan difokuskan pada pengayaan asesmen diagnostik dan diferensiasi produk.',
+    keputusanRapat: [
+      'Komunitas Belajar (Kombel) Guru mengadakan workshop pembuatan LKPD diferensiasi setiap hari Sabtu',
+      'Kepala Sekolah memberikan umpan balik dan apresiasi resmi pada formulir supervisi setiap guru'
+    ],
+    daftarHadirJumlah: {
+      totalUndangan: 14,
+      hadir: 13,
+      izin: 1,
+      sakit: 0
+    },
+    dilihatSemuaPegawai: true
+  },
+  {
+    id: 'RPT-04',
+    nomorSuratUndangan: '421.2/125/SDN-LDP/IX/2024',
+    judulRapat: 'Rapat Kerja Bersama Komite Sekolah & Sosialisasi Program Unggulan',
+    kategori: 'Rapat Koordinasi Komite',
+    hariTanggal: 'Sabtu, 14 September 2024',
+    waktu: '09.00 - 11.30 WITA',
+    tempat: 'Aula Terbuka UPTD SPF SDN Lanto Dg. Pasewang',
+    pimpinanRapat: 'Dra. Hj. Rosdiana, M.Pd. & Ketua Komite Sekolah',
+    notulis: 'Andi Asriani, S.Pd.',
+    pesertaSasaran: 'Pengurus Komite, Paguyuban Orang Tua Kelas 1-6, Dewan Guru',
+    status: 'Akan Datang',
+    urgensi: 'Penting',
+    agendaPembahasan: [
+      'Pemaparan 6 Program Unggulan Sekolah (Kamis Mengaji, Literasi Lorong, Adiwiyata, dll)',
+      'Sinergi paguyuban kelas untuk pembenahan pojok baca dan keasrian kelas',
+      'Sosialisasi jadwal Asesmen Sumatif Tengah Semester (ASTS)',
+      'Rencana Pagelaran Panen Hasil Karya P5 Tema Kewirausahaan & Kearifan Lokal'
+    ],
+    deskripsi: 'Pertemuan kemitraan strategis dengan komite sekolah dan perwakilan orang tua siswa guna mempererat kolaborasi trisentra pendidikan.',
+    agendaPembahasanRingkas: 'Sosialisasi Program Unggulan, ASTS, & Gelar Karya P5',
+    daftarHadirJumlah: {
+      totalUndangan: 25,
+      hadir: 0,
+      izin: 0,
+      sakit: 0
+    },
+    dilihatSemuaPegawai: true
+  },
+  {
+    id: 'RPT-05',
+    nomorSuratUndangan: '421.2/130/SDN-LDP/IX/2024',
+    judulRapat: 'Rapat Pembinaan Kedisiplinan & Peningkatan Pelayanan Tenaga Kependidikan',
+    kategori: 'Rapat Pembinaan Tendik',
+    hariTanggal: 'Jumat, 20 September 2024',
+    waktu: '08.00 - 09.30 WITA',
+    tempat: 'Ruang Kepala Sekolah SDN Lanto Dg. Pasewang',
+    pimpinanRapat: 'Dra. Hj. Rosdiana, M.Pd. (Kepala Sekolah)',
+    notulis: 'Staf Tata Usaha',
+    pesertaSasaran: 'Seluruh Tenaga Kependidikan (TU, Operator Dapodik, Satpam, Penjaga, Petugas Kebersihan)',
+    status: 'Akan Datang',
+    urgensi: 'Biasa',
+    agendaPembahasan: [
+      'Evaluasi kedisiplinan jam kerja dan absensi fingerprint/sistem sekolah',
+      'Standar operasional penerimaan tamu kedinasan dan pencatatan buku tamu',
+      'Jadwal pemeliharaan sarana prasarana dan kebersihan sanitasi lingkungan sekolah',
+      'Kecepatan pemutakhiran data Dapodik dan layanan surat keterangan siswa'
+    ],
+    deskripsi: 'Pembinaan manajerial berkala untuk tenaga kependidikan dalam rangka mewujudkan pelayanan prima dan lingkungan sekolah yang asri, aman, serta tertib.',
+    daftarHadirJumlah: {
+      totalUndangan: 6,
+      hadir: 0,
+      izin: 0,
+      sakit: 0
+    },
+    dilihatSemuaPegawai: true
   }
 ];
 

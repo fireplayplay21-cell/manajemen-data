@@ -47,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
     rkasList,
     suratList,
     agendaKSList,
+    agendaRapatList,
     bukuTamuList,
     jurnalKSList,
     keputusanSKList,
@@ -344,6 +345,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
                 {renderNavButton('menu-guru-program-unggulan', 'program-unggulan', '2. Program Unggulan Sekolah', Award, undefined, undefined, 'blue')}
                 {renderNavButton('menu-guru-supervisi-akademik', 'supervisi-akademik', '3. Supervisi Akademik', ClipboardCheck, formulirSupervisiList?.length || 0, undefined, 'violet')}
                 {renderNavButton('menu-guru-supervisi-manajerial', 'supervisi-manajerial', '4. Supervisi Manajerial', ShieldCheck, undefined, undefined, 'indigo')}
+                {renderNavButton('menu-guru-administrasi-ks', 'administrasi-ks', '5. Agenda Rapat & Info KS', Briefcase, agendaRapatList?.length || 0, 'PUBLIK', 'amber')}
               </div>
             </div>
           ) : (
@@ -421,7 +423,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
                   'administrasi-ks',
                   'Administrasi Kepala Sekolah',
                   Briefcase,
-                  (agendaKSList?.length || 0) + (bukuTamuList?.length || 0) + (jurnalKSList?.length || 0) + (keputusanSKList?.length || 0) + (rencanaPerbaikanList?.length || 0),
+                  (agendaKSList?.length || 0) + (agendaRapatList?.length || 0) + (bukuTamuList?.length || 0) + (jurnalKSList?.length || 0) + (keputusanSKList?.length || 0) + (rencanaPerbaikanList?.length || 0),
                   undefined,
                   'amber'
                 )}

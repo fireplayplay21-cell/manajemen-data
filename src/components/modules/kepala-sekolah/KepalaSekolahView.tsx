@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import {
   AgendaHarianKS,
+  AgendaRapat,
   BukuTamu,
   JurnalKepemimpinan,
   KeputusanSK,
@@ -37,7 +38,13 @@ import {
   Download,
   Printer,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  CalendarCheck,
+  CheckSquare,
+  MessageSquare,
+  ListOrdered,
+  Share2,
+  X
 } from 'lucide-react';
 
 export const KepalaSekolahView: React.FC = () => {
@@ -46,6 +53,10 @@ export const KepalaSekolahView: React.FC = () => {
     addAgendaKS,
     updateAgendaKS,
     deleteAgendaKS,
+    agendaRapatList,
+    addAgendaRapat,
+    updateAgendaRapat,
+    deleteAgendaRapat,
     bukuTamuList,
     addBukuTamu,
     updateBukuTamu,
@@ -66,7 +77,7 @@ export const KepalaSekolahView: React.FC = () => {
     profilSekolah
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'agenda' | 'tamu' | 'jurnal' | 'sk' | 'perbaikan'>('agenda');
+  const [activeTab, setActiveTab] = useState<'agenda' | 'rapat' | 'tamu' | 'jurnal' | 'sk' | 'perbaikan'>('agenda');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
 
@@ -84,6 +95,48 @@ export const KepalaSekolahView: React.FC = () => {
     outputHasil: '',
     status: 'Rencana',
     fileUrl: ''
+  });
+
+  // 2. Agenda Rapat Pegawai (Dilihat Semua Pegawai)
+  const [isRapatModalOpen, setIsRapatModalOpen] = useState(false);
+  const [editingRapat, setEditingRapat] = useState<AgendaRapat | null>(null);
+  const [newAgendaItem, setNewAgendaItem] = useState('');
+  const [newKeputusanItem, setNewKeputusanItem] = useState('');
+  const [selectedRapatForPrint, setSelectedRapatForPrint] = useState<AgendaRapat | null>(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
+  const [rapatForm, setRapatForm] = useState<Omit<AgendaRapat, 'id'>>({
+    judulRapat: '',
+    kategori: 'Rapat Dinas / Dewan Guru',
+    nomorSuratUndangan: `005/0${(agendaRapatList?.length || 0) + 1}/SDN-LDP/VIII/2024`,
+    tanggal: new Date().toISOString().split('T')[0],
+    waktu: '08.30 - 11.30 WITA',
+    tempat: 'Ruang Guru / Aula SDN Lanto Dg. Pasewang',
+    pimpinanRapat: currentUser.nama || 'Dra. Hj. Rosdiana, M.Pd.',
+    notulis: 'Sekretaris Rapat / Guru',
+    pesertaSasaran: 'Seluruh Pendidik & Tenaga Kependidikan (PTK)',
+    status: 'Akan Datang',
+    urgensi: 'Penting',
+    agendaPembahasan: [
+      'Pembukaan dan pengarahan Kepala Sekolah',
+      'Pembahasan agenda utama',
+      'Tanya jawab dan kesepakatan bersama',
+      'Penetapan notulen keputusan dan penutup'
+    ],
+    deskripsi: '',
+    notulenHasil: '',
+    keputusanRapat: [],
+    kehadiranStats: {
+      totalUndangan: 24,
+      hadir: 24,
+      izin: 0,
+      sakit: 0,
+      tanpaKeterangan: 0
+    },
+    fileUndanganUrl: '',
+    fileNotulenUrl: '',
+    fileMateriUrl: '',
+    dilihatSemuaPegawai: true
   });
 
   // 2. Buku Tamu
@@ -147,7 +200,7 @@ export const KepalaSekolahView: React.FC = () => {
 
   // Detail Modal State
   const [viewDetailModal, setViewDetailModal] = useState<{
-    type: 'agenda' | 'tamu' | 'jurnal' | 'sk' | 'perbaikan';
+    type: 'agenda' | 'rapat' | 'tamu' | 'jurnal' | 'sk' | 'perbaikan';
     data: any;
   } | null>(null);
 
@@ -180,6 +233,118 @@ export const KepalaSekolahView: React.FC = () => {
     });
     setEditingAgenda(item);
     setIsAgendaModalOpen(true);
+  };
+
+  const openAddRapat = () => {
+    setRapatForm({
+      judulRapat: '',
+      kategori: 'Rapat Dinas / Dewan Guru',
+      nomorSuratUndangan: `005/0${(agendaRapatList?.length || 0) + 1}/SDN-LDP/VIII/2024`,
+      tanggal: new Date().toISOString().split('T')[0],
+      waktu: '08.30 - 11.30 WITA',
+      tempat: 'Ruang Guru / Aula SDN Lanto Dg. Pasewang',
+      pimpinanRapat: currentUser.nama || 'Dra. Hj. Rosdiana, M.Pd.',
+      notulis: 'Sekretaris Rapat / Guru',
+      pesertaSasaran: 'Seluruh Pendidik & Tenaga Kependidikan (PTK)',
+      status: 'Akan Datang',
+      urgensi: 'Penting',
+      agendaPembahasan: [
+        'Pembukaan dan pengarahan Kepala Sekolah',
+        'Pembahasan agenda utama',
+        'Tanya jawab dan kesepakatan bersama',
+        'Penetapan notulen keputusan dan penutup'
+      ],
+      deskripsi: '',
+      notulenHasil: '',
+      keputusanRapat: [],
+      kehadiranStats: {
+        totalUndangan: 24,
+        hadir: 24,
+        izin: 0,
+        sakit: 0,
+        tanpaKeterangan: 0
+      },
+      fileUndanganUrl: '',
+      fileNotulenUrl: '',
+      fileMateriUrl: '',
+      dilihatSemuaPegawai: true
+    });
+    setNewAgendaItem('');
+    setNewKeputusanItem('');
+    setEditingRapat(null);
+    setIsRapatModalOpen(true);
+  };
+
+  const openEditRapat = (item: AgendaRapat) => {
+    setRapatForm({
+      judulRapat: item.judulRapat,
+      kategori: item.kategori,
+      nomorSuratUndangan: item.nomorSuratUndangan || '',
+      tanggal: item.tanggal,
+      waktu: item.waktu,
+      tempat: item.tempat,
+      pimpinanRapat: item.pimpinanRapat,
+      notulis: item.notulis,
+      pesertaSasaran: item.pesertaSasaran,
+      status: item.status,
+      urgensi: item.urgensi || 'Penting',
+      agendaPembahasan: item.agendaPembahasan || [],
+      deskripsi: item.deskripsi || '',
+      notulenHasil: item.notulenHasil || '',
+      keputusanRapat: item.keputusanRapat || [],
+      kehadiranStats: item.kehadiranStats || {
+        totalUndangan: 24,
+        hadir: 24,
+        izin: 0,
+        sakit: 0,
+        tanpaKeterangan: 0
+      },
+      fileUndanganUrl: item.fileUndanganUrl || '',
+      fileNotulenUrl: item.fileNotulenUrl || '',
+      fileMateriUrl: item.fileMateriUrl || '',
+      dilihatSemuaPegawai: item.dilihatSemuaPegawai ?? true
+    });
+    setNewAgendaItem('');
+    setNewKeputusanItem('');
+    setEditingRapat(item);
+    setIsRapatModalOpen(true);
+  };
+
+  const openPrintRapat = (item: AgendaRapat) => {
+    setSelectedRapatForPrint(item);
+    setIsPrintModalOpen(true);
+  };
+
+  const handleAddAgendaPembahasan = () => {
+    if (!newAgendaItem.trim()) return;
+    setRapatForm(prev => ({
+      ...prev,
+      agendaPembahasan: [...prev.agendaPembahasan, newAgendaItem.trim()]
+    }));
+    setNewAgendaItem('');
+  };
+
+  const handleRemoveAgendaPembahasan = (index: number) => {
+    setRapatForm(prev => ({
+      ...prev,
+      agendaPembahasan: prev.agendaPembahasan.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleAddKeputusan = () => {
+    if (!newKeputusanItem.trim()) return;
+    setRapatForm(prev => ({
+      ...prev,
+      keputusanRapat: [...(prev.keputusanRapat || []), newKeputusanItem.trim()]
+    }));
+    setNewKeputusanItem('');
+  };
+
+  const handleRemoveKeputusan = (index: number) => {
+    setRapatForm(prev => ({
+      ...prev,
+      keputusanRapat: (prev.keputusanRapat || []).filter((_, i) => i !== index)
+    }));
   };
 
   const openAddTamu = () => {

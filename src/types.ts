@@ -477,6 +477,38 @@ export interface AgendaHarianKS {
   fileUrl?: string;
 }
 
+export interface AgendaRapat {
+  id: string;
+  nomorSuratUndangan?: string;
+  judulRapat: string;
+  kategori: 'Rapat Dinas / Dewan Guru' | 'Rapat Koordinasi Komite' | 'Rapat Evaluasi Kurikulum' | 'Rapat Pembinaan Tendik' | 'Rapat Darurat / Khusus';
+  hariTanggal: string;
+  waktu: string;
+  tempat: string;
+  pimpinanRapat: string;
+  notulis: string;
+  pesertaSasaran: string;
+  status: 'Akan Datang' | 'Sedang Berlangsung' | 'Selesai' | 'Ditunda';
+  urgensi: 'Biasa' | 'Penting' | 'Sangat Mendesak';
+  agendaPembahasan: string[];
+  deskripsi: string;
+  notulenHasil?: string;
+  keputusanRapat?: string[];
+  daftarHadirJumlah?: {
+    totalUndangan: number;
+    hadir: number;
+    izin: number;
+    sakit: number;
+  };
+  fileUndanganUrl?: string;
+  fileNotulenUrl?: string;
+  fileMateriUrl?: string;
+  fileDokumentasiUrl?: string;
+  dilihatSemuaPegawai: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface BukuTamu {
   id: string;
   tanggal: string;

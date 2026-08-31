@@ -36,7 +36,9 @@ const GURU_ALLOWED_TABS: ActiveTab[] = [
   'program-unggulan',
   'manajemen-program-unggulan',
   'supervisi-akademik',
-  'supervisi-manajerial'
+  'supervisi-manajerial',
+  'administrasi-ks',
+  'manajemen-kepala-sekolah'
 ];
 
 const MainContent: React.FC = () => {
