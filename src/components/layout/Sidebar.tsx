@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp, ActiveTab } from '../../context/AppContext';
 import { LoginGuruModal } from '../modules/user/LoginGuruModal';
+import { DEFAULT_LOGO_SEKOLAH } from '../../data/brandingAssets';
 import {
   School,
   LayoutDashboard,
@@ -41,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
     pbdList,
     siswaList,
     supervisiAkademikList,
+    formulirSupervisiList,
     sarprasList,
     rkasList,
     suratList,
@@ -258,17 +260,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
                 }}
                 title={isSidebarCollapsed ? "Klik untuk Rentangkan Sidebar" : (profilSekolah?.namaSekolah || "UPTD SPF SDN Lanto Dg. Pasewang")}
               >
-                {profilSekolah?.logoUrl ? (
-                  <img
-                    src={profilSekolah.logoUrl}
-                    alt="Logo Sekolah"
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                    L
-                  </div>
-                )}
+                <img
+                  src={profilSekolah?.logoUrl || DEFAULT_LOGO_SEKOLAH}
+                  alt="Logo Sekolah"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
+                  }}
+                  className="w-full h-full object-contain"
+                />
               </div>
 
               {!isSidebarCollapsed && (
@@ -342,7 +342,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
               <div className="space-y-1.5">
                 {renderNavButton('menu-guru-administrasi', 'administrasi-guru', '1. Administrasi Guru', FolderCheck, administrasiGuruList?.length || 0, undefined, 'emerald')}
                 {renderNavButton('menu-guru-program-unggulan', 'program-unggulan', '2. Program Unggulan Sekolah', Award, undefined, undefined, 'blue')}
-                {renderNavButton('menu-guru-supervisi-akademik', 'supervisi-akademik', '3. Supervisi Akademik', ClipboardCheck, supervisiAkademikList.length, undefined, 'violet')}
+                {renderNavButton('menu-guru-supervisi-akademik', 'supervisi-akademik', '3. Supervisi Akademik', ClipboardCheck, formulirSupervisiList?.length || 0, undefined, 'violet')}
                 {renderNavButton('menu-guru-supervisi-manajerial', 'supervisi-manajerial', '4. Supervisi Manajerial', ShieldCheck, undefined, undefined, 'indigo')}
               </div>
             </div>
@@ -412,7 +412,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
                 )}
                 
                 {renderNavButton('menu-kesiswaan', 'kesiswaan', 'Manajemen Kesiswaan', GraduationCap, siswaList.length, undefined, 'cyan')}
-                {renderNavButton('menu-supervisi-akademik', 'supervisi-akademik', 'Supervisi Akademik', ClipboardCheck, supervisiAkademikList.length, undefined, 'violet')}
+                {renderNavButton('menu-supervisi-akademik', 'supervisi-akademik', 'Supervisi Akademik', ClipboardCheck, formulirSupervisiList?.length || 0, undefined, 'violet')}
                 {renderNavButton('menu-supervisi-manajerial', 'supervisi-manajerial', 'Supervisi Manajerial', ShieldCheck, undefined, undefined, 'indigo')}
                 {renderNavButton('menu-keuangan', 'keuangan', 'Keuangan & BOSP', Wallet, rkasList.length, undefined, 'blue')}
                 {renderNavButton('menu-sarpras', 'sarpras', 'Sarana & Prasarana', PackageCheck, sarprasList.length, undefined, 'blue')}

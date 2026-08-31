@@ -11,7 +11,11 @@ import {
   Trash2,
   AlertTriangle,
   FileCheck,
-  Eye
+  Eye,
+  Layers,
+  Sparkles,
+  Award,
+  CheckSquare
 } from 'lucide-react';
 
 export const SupervisiManajerialView: React.FC = () => {
@@ -25,8 +29,10 @@ export const SupervisiManajerialView: React.FC = () => {
 
   const isGuru = currentUser.role === 'guru';
 
+  // Search & Filter for Matriks Manajerial
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('Semua');
+  const [selectedStandar, setSelectedStandar] = useState('Semua');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SupervisiManajerial | null>(null);
   const [viewingItem, setViewingItem] = useState<SupervisiManajerial | null>(null);
@@ -44,17 +50,19 @@ export const SupervisiManajerialView: React.FC = () => {
 
   const safeSupervisiManajerialList = supervisiManajerialList || [];
 
-  const filteredList = safeSupervisiManajerialList.filter(s => {
+  // Filter for Matriks Manajerial
+  const filteredManajerialList = safeSupervisiManajerialList.filter(s => {
     const matchStatus = selectedStatus === 'Semua' || s.status === selectedStatus;
+    const matchStandar = selectedStandar === 'Semua' || s.aspekStandar === selectedStandar;
     const matchSearch =
       (s.aspekStandar || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.petugasPemantau || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.hasilTemuan || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.rekomendasiTindakLanjut || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchStatus && matchSearch;
+    return matchStatus && matchStandar && matchSearch;
   });
 
-  const handleOpenAdd = () => {
+  const handleOpenAddManajerial = () => {
     setFormData({
       aspekStandar: 'Standar Pengelolaan',
       instrumen: 'Instrumen 8 Standar Nasional Pendidikan',
@@ -69,7 +77,7 @@ export const SupervisiManajerialView: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleOpenEdit = (item: SupervisiManajerial) => {
+  const handleOpenEditManajerial = (item: SupervisiManajerial) => {
     setEditingItem(item);
     setFormData({
       aspekStandar: item.aspekStandar,
@@ -79,7 +87,8 @@ export const SupervisiManajerialView: React.FC = () => {
       hasilTemuan: item.hasilTemuan,
       evaluasiProgram: item.evaluasiProgram,
       rekomendasiTindakLanjut: item.rekomendasiTindakLanjut,
-      status: item.status
+      status: item.status,
+      formulirSupervisiId: item.formulirSupervisiId
     });
     setIsAddModalOpen(true);
   };
@@ -94,6 +103,11 @@ export const SupervisiManajerialView: React.FC = () => {
     setIsAddModalOpen(false);
   };
 
+  // Quick stats
+  const totalItems = safeSupervisiManajerialList.length;
+  const sesuaiCount = safeSupervisiManajerialList.filter(s => s.status === 'Sesuai Standar').length;
+  const perluPerbaikanCount = safeSupervisiManajerialList.filter(s => s.status === 'Perlu Perbaikan').length;
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -101,27 +115,62 @@ export const SupervisiManajerialView: React.FC = () => {
         <div>
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[11px] font-bold border border-blue-200 mb-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-            <span>Manajemen Supervisi • Modul 2</span>
+            <span>Manajemen Supervisi Manajerial (8 SNP)</span>
           </div>
           <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
-            Supervisi Manajerial Sekolah
+            Supervisi Manajerial & Tata Kelola Sekolah
           </h2>
           <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-            Pemantauan 8 Standar Nasional Pendidikan (SNP), instrumen tata kelola, evaluasi program, dan rekomendasi tindak lanjut bersama Pengawas Sekolah.
+            Instrumen pemantauan 8 Standar Nasional Pendidikan (SNP), evaluasi tata kelola sekolah, keterlaksanaan program, serta rekomendasi tindak lanjut pengawas dan kepala sekolah.
           </p>
         </div>
 
         {!isGuru && (
-          <button
-            id="btn-tambah-supervisi-manajerial"
-            type="button"
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Supervisi Manajerial</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              id="btn-tambah-supervisi-manajerial"
+              type="button"
+              onClick={handleOpenAddManajerial}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Supervisi 8 SNP</span>
+            </button>
+          </div>
         )}
+      </div>
+
+      {/* Summary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Pemantauan SNP</span>
+            <span className="text-2xl font-black text-slate-900">{totalItems} Standar</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+            <Layers className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">Sesuai Standar</span>
+            <span className="text-2xl font-black text-emerald-700">{sesuaiCount} Standar</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider block">Perlu Perbaikan</span>
+            <span className="text-2xl font-black text-amber-700">{perluPerbaikanCount} Standar</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+        </div>
       </div>
 
       {/* Filter and Search */}
@@ -138,9 +187,25 @@ export const SupervisiManajerialView: React.FC = () => {
         </div>
 
         <select
+          value={selectedStandar}
+          onChange={e => setSelectedStandar(e.target.value)}
+          className="w-full sm:w-48 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
+        >
+          <option value="Semua">Semua 8 Standar</option>
+          <option value="Standar Pengelolaan">Standar Pengelolaan</option>
+          <option value="Standar Isi">Standar Isi</option>
+          <option value="Standar Proses">Standar Proses</option>
+          <option value="Standar Kelulusan">Standar Kelulusan</option>
+          <option value="Standar PTK">Standar PTK</option>
+          <option value="Standar Sarpras">Standar Sarpras</option>
+          <option value="Standar Pembiayaan">Standar Pembiayaan</option>
+          <option value="Standar Penilaian">Standar Penilaian</option>
+        </select>
+
+        <select
           value={selectedStatus}
           onChange={e => setSelectedStatus(e.target.value)}
-          className="w-full sm:w-48 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
+          className="w-full sm:w-44 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
         >
           <option value="Semua">Semua Status</option>
           <option value="Sesuai Standar">Sesuai Standar</option>
@@ -151,7 +216,7 @@ export const SupervisiManajerialView: React.FC = () => {
 
       {/* Grid Manajerial Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredList.map(item => (
+        {filteredManajerialList.map(item => (
           <div
             key={item.id}
             className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
@@ -221,7 +286,7 @@ export const SupervisiManajerialView: React.FC = () => {
                   <>
                     <button
                       type="button"
-                      onClick={() => handleOpenEdit(item)}
+                      onClick={() => handleOpenEditManajerial(item)}
                       className="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
                       title="Edit Manajerial"
                     >
@@ -243,7 +308,7 @@ export const SupervisiManajerialView: React.FC = () => {
         ))}
       </div>
 
-      {/* Viewing Modal for Guru / All Users */}
+      {/* View Detail Modal for Matriks Supervisi Manajerial */}
       {viewingItem && (
         <Modal
           isOpen={!!viewingItem}
@@ -310,7 +375,7 @@ export const SupervisiManajerialView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setViewingItem(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg cursor-pointer"
               >
                 Tutup
               </button>
@@ -319,7 +384,7 @@ export const SupervisiManajerialView: React.FC = () => {
         </Modal>
       )}
 
-      {/* Add / Edit Modal */}
+      {/* Add / Edit Modal for Matriks Supervisi Manajerial */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -424,13 +489,13 @@ export const SupervisiManajerialView: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium"
+              className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold cursor-pointer"
             >
               {editingItem ? 'Simpan Perubahan' : 'Simpan Supervisi'}
             </button>

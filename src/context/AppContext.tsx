@@ -21,6 +21,8 @@ import {
   MasalahSiswa,
   SupervisiAkademik,
   SupervisiManajerial,
+  FormulirSupervisiLengkap,
+  ItemObservasi5Komponen,
   ItemRKAS,
   TransaksiKeuangan,
   ItemSarpras,
@@ -57,6 +59,7 @@ import {
   initialMasalahSiswa,
   initialSupervisiAkademik,
   initialSupervisiManajerial,
+  initialFormulirSupervisi,
   initialRKAS,
   initialTransaksi,
   initialSarpras,
@@ -121,6 +124,7 @@ interface AppContextType {
   masalahSiswaList: MasalahSiswa[];
   supervisiAkademikList: SupervisiAkademik[];
   supervisiManajerialList: SupervisiManajerial[];
+  formulirSupervisiList: FormulirSupervisiLengkap[];
   rkasList: ItemRKAS[];
   transaksiList: TransaksiKeuangan[];
   sarprasList: ItemSarpras[];
@@ -220,6 +224,13 @@ interface AppContextType {
   addSupervisiManajerial: (item: Omit<SupervisiManajerial, 'id'>) => void;
   updateSupervisiManajerial: (id: string, item: Partial<SupervisiManajerial>) => void;
   deleteSupervisiManajerial: (id: string) => void;
+
+  addFormulirSupervisi: (item: Omit<FormulirSupervisiLengkap, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateFormulirSupervisi: (id: string, item: Partial<FormulirSupervisiLengkap>) => void;
+  deleteFormulirSupervisi: (id: string) => void;
+  syncFormulirToManajerial: (formulirId: string) => void;
+  syncFormulirToAkademik: (formulirId: string) => void;
+  syncAllFormulirToAkademik: () => void;
 
   addRKAS: (item: Omit<ItemRKAS, 'id'>) => void;
   updateRKAS: (id: string, item: Partial<ItemRKAS>) => void;
@@ -343,6 +354,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [masalahSiswaList, setMasalahSiswaList] = useState<MasalahSiswa[]>(() => loadFromStorage('masalahSiswa', initialMasalahSiswa));
   const [supervisiAkademikList, setSupervisiAkademikList] = useState<SupervisiAkademik[]>(() => loadFromStorage('supervisiAkademik', initialSupervisiAkademik));
   const [supervisiManajerialList, setSupervisiManajerialList] = useState<SupervisiManajerial[]>(() => loadFromStorage('supervisiManajerial', initialSupervisiManajerial));
+  const [formulirSupervisiList, setFormulirSupervisiList] = useState<FormulirSupervisiLengkap[]>(() => loadFromStorage('formulirSupervisi', initialFormulirSupervisi));
   const [rkasList, setRkasList] = useState<ItemRKAS[]>(() => loadFromStorage('rkas', initialRKAS));
   const [transaksiList, setTransaksiList] = useState<TransaksiKeuangan[]>(() => loadFromStorage('transaksi', initialTransaksi));
   const [sarprasList, setSarprasList] = useState<ItemSarpras[]>(() => loadFromStorage('sarpras', initialSarpras));
@@ -398,6 +410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (Array.isArray(cloudData.masalahSiswaList)) setMasalahSiswaList(cloudData.masalahSiswaList);
         if (Array.isArray(cloudData.supervisiAkademikList)) setSupervisiAkademikList(cloudData.supervisiAkademikList);
         if (Array.isArray(cloudData.supervisiManajerialList)) setSupervisiManajerialList(cloudData.supervisiManajerialList);
+        if (Array.isArray(cloudData.formulirSupervisiList)) setFormulirSupervisiList(cloudData.formulirSupervisiList);
         if (Array.isArray(cloudData.rkasList)) setRkasList(cloudData.rkasList);
         if (Array.isArray(cloudData.transaksiList)) setTransaksiList(cloudData.transaksiList);
         if (Array.isArray(cloudData.sarprasList)) setSarprasList(cloudData.sarprasList);
@@ -432,6 +445,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           masalahSiswaList,
           supervisiAkademikList,
           supervisiManajerialList,
+          formulirSupervisiList,
           rkasList,
           transaksiList,
           sarprasList,
@@ -504,6 +518,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => saveToStorage('masalahSiswa', masalahSiswaList), [masalahSiswaList]);
   useEffect(() => saveToStorage('supervisiAkademik', supervisiAkademikList), [supervisiAkademikList]);
   useEffect(() => saveToStorage('supervisiManajerial', supervisiManajerialList), [supervisiManajerialList]);
+  useEffect(() => saveToStorage('formulirSupervisi', formulirSupervisiList), [formulirSupervisiList]);
   useEffect(() => saveToStorage('rkas', rkasList), [rkasList]);
   useEffect(() => saveToStorage('transaksi', transaksiList), [transaksiList]);
   useEffect(() => saveToStorage('sarpras', sarprasList), [sarprasList]);
@@ -985,6 +1000,376 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const administrasiGuruCRUD = createCRUD<DokumenAdministrasiGuru>(setAdministrasiGuruList, 'Administrasi Guru', 'ADM-GURU');
   const riwayatPelatihanCRUD = createCRUD<RiwayatPelatihanGuru>(setRiwayatPelatihanList, 'Riwayat Pelatihan Guru', 'TRN');
 
+  // Helper to convert Formulir 3 Tahap to Supervisi Akademik (Matriks Penilaian)
+  const mapFormulirToSupervisiAkademik = (
+    doc: FormulirSupervisiLengkap,
+    existingId?: string
+  ): SupervisiAkademik => {
+    const comp1 = doc.observasi.areaObservasi.find(c => c.nomor === 1)?.ada ?? true;
+    const comp2 = doc.observasi.areaObservasi.find(c => c.nomor === 2)?.ada ?? true;
+    const comp3 = doc.observasi.areaObservasi.find(c => c.nomor === 3)?.ada ?? true;
+    const comp4 = doc.observasi.areaObservasi.find(c => c.nomor === 4)?.ada ?? true;
+    const comp5 = doc.observasi.areaObservasi.find(c => c.nomor === 5)?.ada ?? true;
+
+    // Pra Observasi Scores
+    const kesiapanModulAjar = doc.praObservasi.kesiapanModulAjar ? 95 : 65;
+    const kesiapanMedia = doc.praObservasi.kesiapanMediaAjar ? 92 : 65;
+    const kesiapanAsesmen = doc.praObservasi.kesiapanInstrumenAsesmen ? 90 : 65;
+    const catatanPraObservasi =
+      doc.praObservasi.catatanPraObservasi ||
+      doc.praObservasi.tujuanPembelajaran ||
+      'Modul ajar berdiferensiasi dan instrumen asesmen formatif lengkap.';
+
+    // Observasi Kelas 6 Indikator Skor (0-100)
+    const skorApersepsi = comp1 ? 94 : 65;
+    const skorPenguasaanMateri = comp4 && comp5 ? 95 : comp5 ? 90 : 68;
+    const skorPendekatanBerdiferensiasi = comp1 && comp3 ? 95 : comp1 ? 90 : 65;
+    const skorInteraksiSiswa = comp3 && comp4 ? 94 : comp3 ? 88 : 70;
+    const skorPemanfaatanTeknologi = comp2 ? 92 : 65;
+    const skorAsesmenFormatif = comp5 ? 92 : 68;
+
+    const totalSum =
+      skorApersepsi +
+      skorPenguasaanMateri +
+      skorPendekatanBerdiferensiasi +
+      skorInteraksiSiswa +
+      skorPemanfaatanTeknologi +
+      skorAsesmenFormatif;
+    const totalSkor = parseFloat((totalSum / 6).toFixed(1));
+
+    let kategoriNilai: 'Amat Baik' | 'Baik' | 'Cukup' | 'Perlu Bimbingan' = 'Baik';
+    if (totalSkor >= 91) kategoriNilai = 'Amat Baik';
+    else if (totalSkor >= 81) kategoriNilai = 'Baik';
+    else if (totalSkor >= 71) kategoriNilai = 'Cukup';
+    else kategoriNilai = 'Perlu Bimbingan';
+
+    let status: 'Terjadwal' | 'Pra-Observasi' | 'Observasi Selesai' | 'Tuntas Ditindaklanjuti' = 'Observasi Selesai';
+    if (doc.statusDokumen === 'Disahkan' || doc.statusDokumen === 'Pasca-Observasi Tuntas') {
+      status = 'Tuntas Ditindaklanjuti';
+    } else if (doc.statusDokumen === 'Observasi Berjalan') {
+      status = 'Observasi Selesai';
+    } else if (doc.statusDokumen === 'Pra-Observasi Selesai') {
+      status = 'Pra-Observasi';
+    } else {
+      status = 'Terjadwal';
+    }
+
+    return {
+      id: existingId || `SUP-AKD-${Date.now().toString().slice(-4)}`,
+      namaGuru: doc.namaGuru,
+      nip: doc.nipGuru || '',
+      mataPelajaran: doc.mataPelajaran,
+      kelas: doc.kelas,
+      jadwalTanggal: doc.hariTanggal,
+      jamKe: doc.waktuPercakapan || '08.00 - 09.30',
+      supervisor: doc.namaSupervisor || profilSekolah.kepalaSekolah,
+      kesiapanModulAjar,
+      kesiapanMedia,
+      kesiapanAsesmen,
+      catatanPraObservasi,
+      skorApersepsi,
+      skorPenguasaanMateri,
+      skorPendekatanBerdiferensiasi,
+      skorInteraksiSiswa,
+      skorPemanfaatanTeknologi,
+      skorAsesmenFormatif,
+      totalSkor,
+      kategoriNilai,
+      umpanBalik:
+        doc.pascaObservasi.umpanBalikSupervisor ||
+        doc.observasi.catatanTambahan ||
+        'Pembelajaran diferensiasi aktif dan interaktif.',
+      kelebihan:
+        doc.pascaObservasi.ketercapaianTujuan ||
+        'Pengelolaan kelas kondusif dan pemanfaatan media ajar sangat efektif.',
+      areaPeningkatan:
+        doc.pascaObservasi.sasaranPerbaikan ||
+        'Perlu penguatan asesmen formatif berkelanjutan.',
+      tindakLanjut:
+        doc.pascaObservasi.rencanaTindakLanjut ||
+        doc.pascaObservasi.rekomendasiAkhir ||
+        'Berbagi praktik baik di Komunitas Belajar (Kombel) Guru.',
+      status,
+      formulirSupervisiId: doc.id,
+      sinkronDariFormulir: true
+    };
+  };
+
+  const addFormulirSupervisi = (item: Omit<FormulirSupervisiLengkap, 'id' | 'createdAt' | 'updatedAt'>): string => {
+    const newId = `FORM-SUP-${Date.now().toString().slice(-4)}`;
+    const now = new Date().toISOString();
+    const newDoc: FormulirSupervisiLengkap = {
+      ...item,
+      id: newId,
+      createdAt: now.split('T')[0],
+      updatedAt: now.split('T')[0]
+    };
+
+    // Auto sync to Supervisi Akademik (Matriks Penilaian) by default
+    if (newDoc.sinkronKeAkademik !== false) {
+      const newAkdId = `SUP-AKD-${Date.now().toString().slice(-4)}`;
+      const mappedAkd = mapFormulirToSupervisiAkademik(newDoc, newAkdId);
+      setSupervisiAkademikList(prev => [mappedAkd, ...prev]);
+      newDoc.akademikRefId = newAkdId;
+    }
+
+    // Auto sync to Supervisi Manajerial if enabled
+    if (newDoc.sinkronKeManajerial) {
+      const checkedCount = newDoc.observasi.areaObservasi.filter(a => a.ada).length;
+      const totalCount = newDoc.observasi.areaObservasi.length || 5;
+      const manajerialTitle = `Instrumen 3 Formulir Observasi Kelas 5 Komponen (${newDoc.namaGuru} - ${newDoc.mataPelajaran})`;
+      const hasilTemuan = `[Observasi ${newDoc.observasi.kategoriHasil}] ${checkedCount}/${totalCount} Komponen Terpenuhi. ${newDoc.observasi.catatanTambahan}`;
+      const evaluasiProgram = `Pra-Observasi: ${newDoc.praObservasi.tujuanPembelajaran || 'Tujuan terdefinisi'} | Pasca: ${newDoc.pascaObservasi.ketercapaianTujuan || 'Refleksi pembelajaran dicatat'}`;
+      const rekomendasiTindakLanjut = newDoc.pascaObservasi.rencanaTindakLanjut || newDoc.pascaObservasi.rekomendasiAkhir || 'Pertahankan praktik baik pembelajaran berdiferensiasi.';
+      const statusManajerial = (newDoc.observasi.kategoriHasil === 'Sangat Baik' || newDoc.observasi.kategoriHasil === 'Baik') ? 'Sesuai Standar' : 'Perlu Perbaikan';
+
+      const newManId = `SUP-MAN-${Date.now().toString().slice(-4)}`;
+      const newManRecord: SupervisiManajerial = {
+        id: newManId,
+        aspekStandar: 'Standar Proses',
+        instrumen: manajerialTitle,
+        tanggalPemantauan: newDoc.hariTanggal.includes('-') ? newDoc.hariTanggal : new Date().toISOString().split('T')[0],
+        petugasPemantau: newDoc.namaSupervisor,
+        hasilTemuan,
+        evaluasiProgram,
+        rekomendasiTindakLanjut,
+        status: statusManajerial,
+        formulirSupervisiId: newId
+      };
+      setSupervisiManajerialList(prev => [newManRecord, ...prev]);
+      newDoc.manajerialRefId = newManId;
+    }
+
+    setFormulirSupervisiList(prev => [newDoc, ...prev]);
+
+    showToast('success', 'Formulir Supervisi Disimpan', `Formulir 3 Tahap untuk ${item.namaGuru} berhasil disimpan dan nilai observasi disinkronkan ke Matriks Penilaian.`);
+    return newId;
+  };
+
+  const updateFormulirSupervisi = (id: string, item: Partial<FormulirSupervisiLengkap>) => {
+    let updatedDoc: FormulirSupervisiLengkap | undefined;
+
+    setFormulirSupervisiList(prev => prev.map(f => {
+      if (f.id === id) {
+        const merged: FormulirSupervisiLengkap = {
+          ...f,
+          ...item,
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
+        updatedDoc = merged;
+        return merged;
+      }
+      return f;
+    }));
+
+    // Auto sync to Supervisi Akademik (Matriks Penilaian)
+    if (updatedDoc && updatedDoc.sinkronKeAkademik !== false) {
+      const doc = updatedDoc;
+      setSupervisiAkademikList(prev => {
+        const exists = prev.some(
+          s => s.formulirSupervisiId === id || s.id === doc.akademikRefId || (s.namaGuru === doc.namaGuru && s.mataPelajaran === doc.mataPelajaran)
+        );
+        if (exists) {
+          return prev.map(s => {
+            if (s.formulirSupervisiId === id || s.id === doc.akademikRefId || (s.namaGuru === doc.namaGuru && s.mataPelajaran === doc.mataPelajaran)) {
+              return mapFormulirToSupervisiAkademik(doc, s.id);
+            }
+            return s;
+          });
+        } else {
+          const newAkdId = `SUP-AKD-${Date.now().toString().slice(-4)}`;
+          return [mapFormulirToSupervisiAkademik(doc, newAkdId), ...prev];
+        }
+      });
+    }
+
+    // If synced, update the corresponding Supervisi Manajerial entry
+    if (updatedDoc && updatedDoc.sinkronKeManajerial) {
+      const doc = updatedDoc;
+      const checkedCount = doc.observasi.areaObservasi.filter(a => a.ada).length;
+      const totalCount = doc.observasi.areaObservasi.length || 5;
+      const manajerialTitle = `Instrumen 3 Formulir Observasi Kelas 5 Komponen (${doc.namaGuru} - ${doc.mataPelajaran})`;
+      const hasilTemuan = `[Observasi ${doc.observasi.kategoriHasil}] ${checkedCount}/${totalCount} Komponen Terpenuhi. ${doc.observasi.catatanTambahan}`;
+      const evaluasiProgram = `Pra-Observasi: ${doc.praObservasi.tujuanPembelajaran || 'Tujuan terdefinisi'} | Pasca: ${doc.pascaObservasi.ketercapaianTujuan || 'Refleksi pembelajaran dicatat'}`;
+      const rekomendasiTindakLanjut = doc.pascaObservasi.rencanaTindakLanjut || doc.pascaObservasi.rekomendasiAkhir || 'Pertahankan praktik baik pembelajaran berdiferensiasi.';
+      const statusManajerial = (doc.observasi.kategoriHasil === 'Sangat Baik' || doc.observasi.kategoriHasil === 'Baik') ? 'Sesuai Standar' : 'Perlu Perbaikan';
+
+      setSupervisiManajerialList(prev => {
+        const exists = prev.some(m => m.formulirSupervisiId === id || m.id === doc.manajerialRefId);
+        if (exists) {
+          return prev.map(m => {
+            if (m.formulirSupervisiId === id || m.id === doc.manajerialRefId) {
+              return {
+                ...m,
+                aspekStandar: 'Standar Proses',
+                instrumen: manajerialTitle,
+                tanggalPemantauan: doc.hariTanggal.includes('-') ? doc.hariTanggal : new Date().toISOString().split('T')[0],
+                petugasPemantau: doc.namaSupervisor,
+                hasilTemuan,
+                evaluasiProgram,
+                rekomendasiTindakLanjut,
+                status: statusManajerial,
+                formulirSupervisiId: id
+              };
+            }
+            return m;
+          });
+        } else {
+          const newManId = `SUP-MAN-${Date.now().toString().slice(-4)}`;
+          return [{
+            id: newManId,
+            aspekStandar: 'Standar Proses',
+            instrumen: manajerialTitle,
+            tanggalPemantauan: doc.hariTanggal.includes('-') ? doc.hariTanggal : new Date().toISOString().split('T')[0],
+            petugasPemantau: doc.namaSupervisor,
+            hasilTemuan,
+            evaluasiProgram,
+            rekomendasiTindakLanjut,
+            status: statusManajerial,
+            formulirSupervisiId: id
+          }, ...prev];
+        }
+      });
+    }
+
+    showToast('success', 'Formulir Supervisi Diperbarui', 'Perubahan formulir supervisi dan nilai matriks penilaian berhasil disinkronkan.');
+  };
+
+  const deleteFormulirSupervisi = (id: string) => {
+    setFormulirSupervisiList(prev => prev.filter(f => f.id !== id));
+    // Also unlink or remove matching record in Supervisi Manajerial
+    setSupervisiManajerialList(prev => prev.filter(m => m.formulirSupervisiId !== id));
+    // Mark or clean up link in Supervisi Akademik
+    setSupervisiAkademikList(prev =>
+      prev.map(s => (s.formulirSupervisiId === id ? { ...s, sinkronDariFormulir: false, formulirSupervisiId: undefined } : s))
+    );
+    showToast('info', 'Formulir Dihapus', 'Dokumen formulir supervisi berhasil dihapus.');
+  };
+
+  const syncFormulirToAkademik = (formulirId: string) => {
+    const doc = formulirSupervisiList.find(f => f.id === formulirId);
+    if (!doc) return;
+
+    let targetAkdId: string | undefined;
+
+    setSupervisiAkademikList(prev => {
+      const existing = prev.find(
+        s =>
+          s.formulirSupervisiId === formulirId ||
+          s.id === doc.akademikRefId ||
+          (s.namaGuru === doc.namaGuru && s.mataPelajaran === doc.mataPelajaran)
+      );
+      if (existing) {
+        targetAkdId = existing.id;
+        const mapped = mapFormulirToSupervisiAkademik(doc, existing.id);
+        return prev.map(s => (s.id === existing.id ? mapped : s));
+      } else {
+        const newId = `SUP-AKD-${Date.now().toString().slice(-4)}`;
+        targetAkdId = newId;
+        const mapped = mapFormulirToSupervisiAkademik(doc, newId);
+        return [mapped, ...prev];
+      }
+    });
+
+    if (targetAkdId) {
+      setFormulirSupervisiList(prev =>
+        prev.map(f => (f.id === formulirId ? { ...f, akademikRefId: targetAkdId, sinkronKeAkademik: true } : f))
+      );
+    }
+
+    showToast(
+      'success',
+      'Nilai Observasi Disinkronkan',
+      `Nilai observasi 5 komponen dari ${doc.namaGuru} (${doc.mataPelajaran}) berhasil disinkronkan ke Matriks Penilaian Supervisi Akademik.`
+    );
+  };
+
+  const syncAllFormulirToAkademik = () => {
+    if (!formulirSupervisiList || formulirSupervisiList.length === 0) {
+      showToast('info', 'Tidak Ada Data', 'Belum ada formulir supervisi 3 tahap untuk disinkronkan.');
+      return;
+    }
+
+    setSupervisiAkademikList(prev => {
+      let currentList = [...prev];
+      formulirSupervisiList.forEach(doc => {
+        const existing = currentList.find(
+          s =>
+            s.formulirSupervisiId === doc.id ||
+            s.id === doc.akademikRefId ||
+            (s.namaGuru === doc.namaGuru && s.mataPelajaran === doc.mataPelajaran)
+        );
+        if (existing) {
+          const mapped = mapFormulirToSupervisiAkademik(doc, existing.id);
+          currentList = currentList.map(s => (s.id === existing.id ? mapped : s));
+        } else {
+          const newId = `SUP-AKD-${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 100)}`;
+          const mapped = mapFormulirToSupervisiAkademik(doc, newId);
+          currentList = [mapped, ...currentList];
+        }
+      });
+      return currentList;
+    });
+
+    showToast(
+      'success',
+      'Sinkronisasi Massal Berhasil',
+      `Semua nilai observasi (${formulirSupervisiList.length} Formulir Supervisi) telah berhasil disinkronkan ke Matriks Penilaian Supervisi Akademik.`
+    );
+  };
+
+  const syncFormulirToManajerial = (formulirId: string) => {
+    const doc = formulirSupervisiList.find(f => f.id === formulirId);
+    if (!doc) return;
+
+    const checkedCount = doc.observasi.areaObservasi.filter(a => a.ada).length;
+    const totalCount = doc.observasi.areaObservasi.length || 5;
+    const manajerialTitle = `Instrumen 3 Formulir Observasi Kelas 5 Komponen (${doc.namaGuru} - ${doc.mataPelajaran})`;
+    const hasilTemuan = `[Observasi ${doc.observasi.kategoriHasil}] ${checkedCount}/${totalCount} Komponen Terpenuhi. ${doc.observasi.catatanTambahan}`;
+    const evaluasiProgram = `Pra-Observasi: ${doc.praObservasi.tujuanPembelajaran || 'Tujuan terdefinisi'} | Pasca: ${doc.pascaObservasi.ketercapaianTujuan || 'Refleksi pembelajaran dicatat'}`;
+    const rekomendasiTindakLanjut = doc.pascaObservasi.rencanaTindakLanjut || doc.pascaObservasi.rekomendasiAkhir || 'Pertahankan praktik baik pembelajaran berdiferensiasi.';
+    const statusManajerial = (doc.observasi.kategoriHasil === 'Sangat Baik' || doc.observasi.kategoriHasil === 'Baik') ? 'Sesuai Standar' : 'Perlu Perbaikan';
+
+    setSupervisiManajerialList(prev => {
+      const exists = prev.some(m => m.formulirSupervisiId === formulirId || m.id === doc.manajerialRefId);
+      if (exists) {
+        return prev.map(m => {
+          if (m.formulirSupervisiId === formulirId || m.id === doc.manajerialRefId) {
+            return {
+              ...m,
+              aspekStandar: 'Standar Proses',
+              instrumen: manajerialTitle,
+              tanggalPemantauan: doc.hariTanggal.includes('-') ? doc.hariTanggal : new Date().toISOString().split('T')[0],
+              petugasPemantau: doc.namaSupervisor,
+              hasilTemuan,
+              evaluasiProgram,
+              rekomendasiTindakLanjut,
+              status: statusManajerial,
+              formulirSupervisiId: formulirId
+            };
+          }
+          return m;
+        });
+      } else {
+        const newManId = `SUP-MAN-${Date.now().toString().slice(-4)}`;
+        return [{
+          id: newManId,
+          aspekStandar: 'Standar Proses',
+          instrumen: manajerialTitle,
+          tanggalPemantauan: doc.hariTanggal.includes('-') ? doc.hariTanggal : new Date().toISOString().split('T')[0],
+          petugasPemantau: doc.namaSupervisor,
+          hasilTemuan,
+          evaluasiProgram,
+          rekomendasiTindakLanjut,
+          status: statusManajerial,
+          formulirSupervisiId: formulirId
+        }, ...prev];
+      }
+    });
+
+    showToast('success', 'Sinkronisasi Berhasil', `Data hasil observasi pembelajaran ${doc.namaGuru} telah disinkronkan ke Matriks Supervisi Manajerial.`);
+  };
+
   const kirimAdministrasiGuru = (id: string) => {
     setAdministrasiGuruList(prev => prev.map(item => {
       if (item.id === id) {
@@ -1047,6 +1432,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         masalahSiswaList,
         supervisiAkademikList,
         supervisiManajerialList,
+        formulirSupervisiList,
         rkasList,
         transaksiList,
         sarprasList,
@@ -1102,7 +1488,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     keputusanSKList,
     rencanaPerbaikanList,
     administrasiGuruList,
-    riwayatPelatihanList
+    riwayatPelatihanList,
+    formulirSupervisiList
   ]);
 
   const resetAllData = () => {
@@ -1125,6 +1512,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMasalahSiswaList(initialMasalahSiswa);
     setSupervisiAkademikList(initialSupervisiAkademik);
     setSupervisiManajerialList(initialSupervisiManajerial);
+    setFormulirSupervisiList(initialFormulirSupervisi);
     setRkasList(initialRKAS);
     setTransaksiList(initialTransaksi);
     setSarprasList(initialSarpras);
@@ -1176,6 +1564,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         masalahSiswaList: Array.isArray(masalahSiswaList) ? masalahSiswaList : initialMasalahSiswa,
         supervisiAkademikList: Array.isArray(supervisiAkademikList) ? supervisiAkademikList : initialSupervisiAkademik,
         supervisiManajerialList: Array.isArray(supervisiManajerialList) ? supervisiManajerialList : initialSupervisiManajerial,
+        formulirSupervisiList: Array.isArray(formulirSupervisiList) ? formulirSupervisiList : initialFormulirSupervisi,
         rkasList: Array.isArray(rkasList) ? rkasList : initialRKAS,
         transaksiList: Array.isArray(transaksiList) ? transaksiList : initialTransaksi,
         sarprasList: Array.isArray(sarprasList) ? sarprasList : initialSarpras,
@@ -1264,6 +1653,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addSupervisiManajerial: supervisiManCRUD.add,
         updateSupervisiManajerial: supervisiManCRUD.update,
         deleteSupervisiManajerial: supervisiManCRUD.delete,
+
+        addFormulirSupervisi,
+        updateFormulirSupervisi,
+        deleteFormulirSupervisi,
+        syncFormulirToManajerial,
+        syncFormulirToAkademik,
+        syncAllFormulirToAkademik,
 
         addRKAS: rkasCRUD.add,
         updateRKAS: rkasCRUD.update,

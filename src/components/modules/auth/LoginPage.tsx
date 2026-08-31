@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { UserAccount } from '../../../types';
+import { DEFAULT_LOGO_SEKOLAH } from '../../../data/brandingAssets';
 import {
   Cloud,
   Lock,
@@ -155,11 +156,15 @@ export const LoginPage: React.FC = () => {
           <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 text-blue-600 flex items-center justify-center shadow-md shadow-[#00c0ff]/20 p-1 overflow-hidden shrink-0">
-                {profilSekolah.logoUrl ? (
-                  <img src={profilSekolah.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-                ) : (
-                  <Cloud className="w-5 h-5 text-[#00c0ff] fill-[#00c0ff]" />
-                )}
+                <img
+                  src={profilSekolah.logoUrl || DEFAULT_LOGO_SEKOLAH}
+                  alt="Logo"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
+                  }}
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <span className="text-sm font-black tracking-wider text-slate-800 uppercase block leading-none">

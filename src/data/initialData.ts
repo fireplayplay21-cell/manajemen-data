@@ -28,8 +28,15 @@ import {
   RencanaPerbaikan,
   DokumenAdministrasiGuru,
   KategoriAdministrasiGuru,
-  RiwayatPelatihanGuru
+  RiwayatPelatihanGuru,
+  ItemObservasi5Komponen,
+  FormulirSupervisiLengkap
 } from '../types';
+import {
+  DEFAULT_LOGO_SEKOLAH,
+  DEFAULT_LOGO_MAKASSAR,
+  DEFAULT_LOGO_TUT_WURI
+} from './brandingAssets';
 
 export const initialProfilSekolah: ProfilSekolah = {
   namaSekolah: 'UPTD SPF SDN Lanto Dg. Pasewang',
@@ -67,9 +74,9 @@ export const initialProfilSekolah: ProfilSekolah = {
   semboyan: 'Sipakatau, Sipakalebbi, Sipakainge - Unggul dalam Prestasi, Santun dalam Pekerti',
   tahunPelajaran: '2024/2025',
   semester: 'Semester Ganjil',
-  logoUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=300',
-  logoDinasUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Coat_of_arms_of_Makassar.svg/240px-Coat_of_arms_of_Makassar.svg.png',
-  tutWuriLogoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Logo_Tut_Wuri_Handayani.png/300px-Logo_Tut_Wuri_Handayani.png',
+  logoUrl: DEFAULT_LOGO_SEKOLAH,
+  logoDinasUrl: DEFAULT_LOGO_MAKASSAR,
+  tutWuriLogoUrl: DEFAULT_LOGO_TUT_WURI,
   stempelUrl: ''
 };
 
@@ -982,6 +989,226 @@ export const initialSupervisiAkademik: SupervisiAkademik[] = [
   }
 ];
 
+export const DEFAULT_5_KOMPONEN_OBSERVASI: ItemObservasi5Komponen[] = [
+  {
+    id: 1,
+    nomor: 1,
+    aspekDanStrategi: 'Menerapkan pembelajaran diferensiasi untuk memenuhi kebutuhan belajar siswa yang beragam, yang meliputi diferensiasi konten,proses dan produk',
+    ada: true,
+    catatanPengamatan: 'Observee terlihat sudah menerapkan pembelajaran diferensiasi yang meliputi diferensiasi konten,proses, dan produk untuk memenuhi kebutuhan belajar murid yang beraneka ragam.',
+    catatanReferensiDefault: 'Observee terlihat sudah menerapkan pembelajaran diferensiasi yang meliputi diferensiasi konten,proses, dan produk untuk memenuhi kebutuhan belajar murid yang beraneka ragam.'
+  },
+  {
+    id: 2,
+    nomor: 2,
+    aspekDanStrategi: 'Menggunakan alat peraga gambar kegiatan,video,kartu kegiatan peran dan tugas anak dan orang tua di sekolah dan di rumah.',
+    ada: true,
+    catatanPengamatan: 'Observee menggunakan alat peraga gambar,video, kartu kegiatan peran dan tugas anak dan orang tua di sekolah dan di rumah.',
+    catatanReferensiDefault: 'Observee menggunakan alat peraga gambar,video, kartu kegiatan peran dan tugas anak dan orang tua di sekolah dan di rumah.'
+  },
+  {
+    id: 3,
+    nomor: 3,
+    aspekDanStrategi: 'Memberikan kebebasan kepada siswa dalam membentuk kelompoknya sesuai minat dan pemahaman siswa',
+    ada: true,
+    catatanPengamatan: 'Observee terlihat memberikan kebebasan kepada siswa dalam membentuk kelompoknya sesuai minat dan pemahaman siswa tentang kegiatan peran dan tugas anak dan orang tua',
+    catatanReferensiDefault: 'Observee terlihat memberikan kebebasan kepada siswa dalam membentuk kelompoknya sesuai minat dan pemahaman siswa tentang kegiatan peran dan tugas anak dan orang tua'
+  },
+  {
+    id: 4,
+    nomor: 4,
+    aspekDanStrategi: 'Mendampingi dan memberikan bimbingan kepada setiap kelompok untuk menghasilkan produk ( gambar,bermain peran )',
+    ada: true,
+    catatanPengamatan: 'Saat penugasan kelompok terlihat observe mendampingi dan memberikan masukan/bimbingan kepada setiap kelompok',
+    catatanReferensiDefault: 'Saat penugasan kelompok terlihat observe mendampingi dan memberikan masukan/bimbingan kepada setiap kelompok'
+  },
+  {
+    id: 5,
+    nomor: 5,
+    aspekDanStrategi: 'Metode yang digunakan ceramah,Tanya jawab, demonstrasi, diskusi, mengamati video/gambar,menggunakan pendekatan saintifik ( mengamati video/gambar,menanya,mengumpulkan informasi ( diskusi kelompok ), mengasosiasi data ( mengolah data ) dan mengkomunikasikan ( mempresentasikan hasil diskusi di depan kelas ).',
+    ada: true,
+    catatanPengamatan: 'Observee menggunakan metode yang bervariasi dan menggunakan pendekatan saintifik saat sedang melaksanakan KBM',
+    catatanReferensiDefault: 'Observee menggunakan metode yang bervariasi dan menggunakan pendekatan saintifik saat sedang melaksanakan KBM'
+  }
+];
+
+export const DEFAULT_CATATAN_TAMBAHAN_OBSERVASI = `Kegiatan pembelajaran tentang materi Tugas dan Peran dalam Kegiatan Bersama yang telah diterapkan observe sudah menerapkan pembelajaran berdiferensiasi yaitu diferensiasi konten,proses dan produk sehingga terlihat pembelajaran yang berpihak pada murid,dan menyenangkan. Dengan penerapan pembelajaran berdiferensiasi ini murid bias menemukan konsepnya dan lebih bersemangat serta aktif sesuai dengan minat dan potensinya.`;
+
+export const initialFormulirSupervisi: FormulirSupervisiLengkap[] = [
+  {
+    id: 'FORM-SUP-01',
+    hariTanggal: 'Selasa, 26 September 2023',
+    sekolah: 'UPTD SPF SDN Lanto Dg. Pasewang',
+    namaGuru: 'Salafi Artika Dini, S.Pd',
+    nipGuru: '198805142019032008',
+    mataPelajaran: 'PKN',
+    kelas: '2 ( Dua )',
+    waktuPercakapan: '10.00 – 10.15 ( 15 menit )',
+    namaSupervisor: 'Dra. Hj. Rosdiana, M.Pd.',
+    nipSupervisor: '19700412 199303 2 004',
+    tahapAktif: 'observasi',
+    praObservasi: {
+      tujuanPembelajaran: 'Peserta didik mampu mengidentifikasi serta menceritakan tugas dan peran anggota keluarga dalam kegiatan bersama di rumah dan di sekolah.',
+      aspekPengembangan: 'Penerapan pembelajaran berdiferensiasi (konten, proses, produk) dan penguatan media visual interaktif.',
+      strategiPembelajaran: 'Pendekatan saintifik berpusat pada murid melalui diskusi kelompok kecil, tayangan video studi kasus, dan kartu peran.',
+      kesiapanModulAjar: true,
+      kesiapanMediaAjar: true,
+      kesiapanInstrumenAsesmen: true,
+      catatanPraObservasi: 'Guru telah menyusun modul ajar lengkap dengan asesmen diagnostik dan formatif. Media kartu peran dan proyektor siap digunakan.',
+      catatanReferensiDefault: 'Guru telah menyusun modul ajar lengkap dengan asesmen diagnostik dan formatif. Media kartu peran dan proyektor siap digunakan.'
+    },
+    observasi: {
+      areaObservasi: [
+        {
+          id: 1,
+          nomor: 1,
+          aspekDanStrategi: 'Menerapkan pembelajaran diferensiasi untuk memenuhi kebutuhan belajar siswa yang beragam, yang meliputi diferensiasi konten,proses dan produk',
+          ada: true,
+          catatanPengamatan: 'Observee terlihat sudah menerapkan pembelajaran diferensiasi yang meliputi diferensiasi konten,proses, dan produk untuk memenuhi kebutuhan belajar murid yang beraneka ragam.',
+          catatanReferensiDefault: 'Observee terlihat sudah menerapkan pembelajaran diferensiasi yang meliputi diferensiasi konten,proses, dan produk untuk memenuhi kebutuhan belajar murid yang beraneka ragam.'
+        },
+        {
+          id: 2,
+          nomor: 2,
+          aspekDanStrategi: 'Menggunakan alat peraga gambar kegiatan,video,kartu kegiatan peran dan tugas anak dan orang tua di sekolah dan di rumah.',
+          ada: true,
+          catatanPengamatan: 'Observee menggunakan alat peraga gambar,video, kartu kegiatan peran dan tugas anak dan orang tua di sekolah dan di rumah.',
+          catatanReferensiDefault: 'Observee menggunakan alat peraga gambar,video, kartu kegiatan peran dan tugas anak dan orang tua di sekolah dan di rumah.'
+        },
+        {
+          id: 3,
+          nomor: 3,
+          aspekDanStrategi: 'Memberikan kebebasan kepada siswa dalam membentuk kelompoknya sesuai minat dan pemahaman siswa',
+          ada: true,
+          catatanPengamatan: 'Observee terlihat memberikan kebebasan kepada siswa dalam membentuk kelompoknya sesuai minat dan pemahaman siswa tentang kegiatan peran dan tugas anak dan orang tua',
+          catatanReferensiDefault: 'Observee terlihat memberikan kebebasan kepada siswa dalam membentuk kelompoknya sesuai minat dan pemahaman siswa tentang kegiatan peran dan tugas anak dan orang tua'
+        },
+        {
+          id: 4,
+          nomor: 4,
+          aspekDanStrategi: 'Mendampingi dan memberikan bimbingan kepada setiap kelompok untuk menghasilkan produk ( gambar,bermain peran )',
+          ada: true,
+          catatanPengamatan: 'Saat penugasan kelompok terlihat observe mendampingi dan memberikan masukan/bimbingan kepada setiap kelompok',
+          catatanReferensiDefault: 'Saat penugasan kelompok terlihat observe mendampingi dan memberikan masukan/bimbingan kepada setiap kelompok'
+        },
+        {
+          id: 5,
+          nomor: 5,
+          aspekDanStrategi: 'Metode yang digunakan ceramah,Tanya jawab, demonstrasi, diskusi, mengamati video/gambar,menggunakan pendekatan saintifik ( mengamati video/gambar,menanya,mengumpulkan informasi ( diskusi kelompok ), mengasosiasi data ( mengolah data ) dan mengkomunikasikan ( mempresentasikan hasil diskusi di depan kelas ).',
+          ada: true,
+          catatanPengamatan: 'Observee menggunakan metode yang bervariasi dan menggunakan pendekatan saintifik saat sedang melaksanakan KBM',
+          catatanReferensiDefault: 'Observee menggunakan metode yang bervariasi dan menggunakan pendekatan saintifik saat sedang melaksanakan KBM'
+        }
+      ],
+      catatanTambahan: 'Kegiatan pembelajaran tentang materi Tugas dan Peran dalam Kegiatan Bersama yang telah diterapkan observe sudah menerapkan pembelajaran berdiferensiasi yaitu diferensiasi konten,proses dan produk sehingga terlihat pembelajaran yang berpihak pada murid,dan menyenangkan. Dengan penerapan pembelajaran berdiferensiasi ini murid bias menemukan konsepnya dan lebih bersemangat serta aktif sesuai dengan minat dan potensinya.',
+      catatanTambahanReferensiDefault: 'Kegiatan pembelajaran tentang materi Tugas dan Peran dalam Kegiatan Bersama yang telah diterapkan observe sudah menerapkan pembelajaran berdiferensiasi yaitu diferensiasi konten,proses dan produk sehingga terlihat pembelajaran yang berpihak pada murid,dan menyenangkan. Dengan penerapan pembelajaran berdiferensiasi ini murid bias menemukan konsepnya dan lebih bersemangat serta aktif sesuai dengan minat dan potensinya.',
+      skorKelayakanPersen: 100,
+      kategoriHasil: 'Sangat Baik'
+    },
+    pascaObservasi: {
+      refleksiGuru: 'Saya merasa sangat senang karena siswa antusias bermain peran. Sebagian kecil siswa pemalu membutuhkan dorongan ekstra saat presentasi kelompok.',
+      ketercapaianTujuan: 'Sebesar 92% peserta didik telah mencapai kriteria ketercapaian tujuan pembelajaran (KKTP) dengan mampu mengelompokkan peran keluarga dan sekolah.',
+      umpanBalikSupervisor: 'Apresiasi tinggi atas pelaksanaan pembelajaran diferensiasi yang kontekstual dan interaktif. Penguasaan kelas sangat prima.',
+      rencanaTindakLanjut: 'Pengembangan variasi lembar kerja siswa (LKS) bergambar untuk memperkaya asesmen formatif berkelanjutan.',
+      komitmenWaktu: 'Pekan ke-2 Oktober 2023',
+      sasaranPerbaikan: 'Meningkatkan kepercayaan diri seluruh peserta didik saat unjuk kerja presentasi di depan kelas.',
+      rekomendasiAkhir: 'Pertahankan praktik baik pembelajaran berdiferensiasi dan bagikan pengalaman ini di Komunitas Belajar (Kombel) Guru.',
+      catatanReferensiDefault: 'Pertahankan praktik baik pembelajaran berdiferensiasi dan bagikan pengalaman ini di Komunitas Belajar (Kombel) Guru.'
+    },
+    sinkronKeManajerial: true,
+    manajerialRefId: 'SUP-MAN-03',
+    statusDokumen: 'Disahkan',
+    createdAt: '2023-09-26',
+    updatedAt: '2023-09-26'
+  },
+  {
+    id: 'FORM-SUP-02',
+    hariTanggal: 'Kamis, 15 Agustus 2024',
+    sekolah: 'UPTD SPF SDN Lanto Dg. Pasewang',
+    namaGuru: 'H. Muhammad Idris, S.Pd., M.Pd.',
+    nipGuru: '197806152005021003',
+    mataPelajaran: 'IPAS (Fase C)',
+    kelas: 'Kelas 5A',
+    waktuPercakapan: '08.00 – 09.30 (90 menit)',
+    namaSupervisor: 'Dra. Hj. Rosdiana, M.Pd.',
+    nipSupervisor: '197004121993032004',
+    tahapAktif: 'ringkasan',
+    praObservasi: {
+      tujuanPembelajaran: 'Siswa dapat menganalisis organ pencernaan manusia dan fungsinya melalui simulasi interaktif digital.',
+      aspekPengembangan: 'Integrasi teknologi interaktif (Chromebook & Canva) dan diferensiasi produk tugas kelompok.',
+      strategiPembelajaran: 'Model Problem-Based Learning (PBL) berbantuan media interaktif dan diskusi kelompok kolaboratif.',
+      kesiapanModulAjar: true,
+      kesiapanMediaAjar: true,
+      kesiapanInstrumenAsesmen: true,
+      catatanPraObservasi: 'Perangkat ajar dan sarana Chromebook laboratorium siap 100%. Rubrik penilaian kolaborasi kelompok telah tersedia.',
+      catatanReferensiDefault: 'Perangkat ajar dan sarana Chromebook laboratorium siap 100%. Rubrik penilaian kolaborasi kelompok telah tersedia.'
+    },
+    observasi: {
+      areaObservasi: [
+        {
+          id: 1,
+          nomor: 1,
+          aspekDanStrategi: 'Menerapkan pembelajaran diferensiasi untuk memenuhi kebutuhan belajar siswa yang beragam, yang meliputi diferensiasi konten,proses dan produk',
+          ada: true,
+          catatanPengamatan: 'Observee menyajikan variasi konten berupa infografis, video simulasi 3D, dan kartu tugas fisik untuk memfasilitasi ragam gaya belajar.',
+          catatanReferensiDefault: 'Observee terlihat sudah menerapkan pembelajaran diferensiasi yang meliputi diferensiasi konten,proses, dan produk untuk memenuhi kebutuhan belajar murid yang beraneka ragam.'
+        },
+        {
+          id: 2,
+          nomor: 2,
+          aspekDanStrategi: 'Menggunakan alat peraga gambar kegiatan,video,kartu kegiatan peran dan tugas anak dan orang tua di sekolah dan di rumah.',
+          ada: true,
+          catatanPengamatan: 'Observee menggunakan Chromebook interaktif, poster anatomi tubuh manusia, dan video organ pencernaan.',
+          catatanReferensiDefault: 'Observee menggunakan alat peraga gambar,video, kartu kegiatan peran dan tugas anak dan orang tua di sekolah dan di rumah.'
+        },
+        {
+          id: 3,
+          nomor: 3,
+          aspekDanStrategi: 'Memberikan kebebasan kepada siswa dalam membentuk kelompoknya sesuai minat dan pemahaman siswa',
+          ada: true,
+          catatanPengamatan: 'Observee memfasilitasi pembentukan kelompok berdasarkan minat minat pembuatan produk (poster digital, mind map, atau rekaman presentasi).',
+          catatanReferensiDefault: 'Observee terlihat memberikan kebebasan kepada siswa dalam membentuk kelompoknya sesuai minat dan pemahaman siswa tentang kegiatan peran dan tugas anak dan orang tua'
+        },
+        {
+          id: 4,
+          nomor: 4,
+          aspekDanStrategi: 'Mendampingi dan memberikan bimbingan kepada setiap kelompok untuk menghasilkan produk ( gambar,bermain peran )',
+          ada: true,
+          catatanPengamatan: 'Observee berkeliling aktif memberikan bimbingan scaffolding secara terarah pada kelompok yang mengalami kesulitan analisis fungsi enzim.',
+          catatanReferensiDefault: 'Saat penugasan kelompok terlihat observe mendampingi dan memberikan masukan/bimbingan kepada setiap kelompok'
+        },
+        {
+          id: 5,
+          nomor: 5,
+          aspekDanStrategi: 'Metode yang digunakan ceramah,Tanya jawab, demonstrasi, diskusi, mengamati video/gambar,menggunakan pendekatan saintifik ( mengamati video/gambar,menanya,mengumpulkan informasi ( diskusi kelompok ), mengasosiasi data ( mengolah data ) dan mengkomunikasikan ( mempresentasikan hasil diskusi di depan kelas ).',
+          ada: true,
+          catatanPengamatan: 'Observee mengelola tahapan 5M (mengamati, menanya, mencoba, menalar, mengomunikasikan) secara dinamis dan antusias.',
+          catatanReferensiDefault: 'Observee menggunakan metode yang bervariasi dan menggunakan pendekatan saintifik saat sedang melaksanakan KBM'
+        }
+      ],
+      catatanTambahan: 'Pembelajaran di kelas 5A berlangsung sangat kondusif, interaktif, dan menggembirakan. Murid sangat antusias menggunakan media digital untuk mempresentasikan hasil karya kelompok.',
+      catatanTambahanReferensiDefault: 'Kegiatan pembelajaran tentang materi Tugas dan Peran dalam Kegiatan Bersama yang telah diterapkan observe sudah menerapkan pembelajaran berdiferensiasi yaitu diferensiasi konten,proses dan produk sehingga terlihat pembelajaran yang berpihak pada murid,dan menyenangkan. Dengan penerapan pembelajaran berdiferensiasi ini murid bias menemukan konsepnya dan lebih bersemangat serta aktif sesuai dengan minat dan potensinya.',
+      skorKelayakanPersen: 100,
+      kategoriHasil: 'Sangat Baik'
+    },
+    pascaObservasi: {
+      refleksiGuru: 'Penggunaan media digital membuat siswa lebih fokus dan aktif bereksplorasi. Waktu presentasi kelompok sedikit melebihi estimasi awal.',
+      ketercapaianTujuan: '95% siswa memperoleh nilai asesmen formatif di atas KKTP (Kriteria Ketercapaian Tujuan Pembelajaran).',
+      umpanBalikSupervisor: 'Sangat mengapresiasi inovasi pembelajaran berbasis digitalisasi dan diferensiasi. Terus pertahankan budaya pembelajaran positif.',
+      rencanaTindakLanjut: 'Diseminasi praktik baik pemanfaatan Canva Education untuk pembelajaran IPA di KKG Gugus.',
+      komitmenWaktu: 'Bulan September 2024',
+      sasaranPerbaikan: 'Manajemen alokasi waktu presentasi kelompok agar lebih presisi.',
+      rekomendasiAkhir: 'Direkomendasikan sebagai fasilitator praktik baik pembelajaran berdiferensiasi tingkat gugus sekolah.',
+      catatanReferensiDefault: 'Pertahankan praktik baik pembelajaran berdiferensiasi dan bagikan pengalaman ini di Komunitas Belajar (Kombel) Guru.'
+    },
+    sinkronKeManajerial: true,
+    manajerialRefId: 'SUP-MAN-04',
+    statusDokumen: 'Disahkan',
+    createdAt: '2024-08-15',
+    updatedAt: '2024-08-15'
+  }
+];
+
 export const initialSupervisiManajerial: SupervisiManajerial[] = [
   {
     id: 'SUP-MAN-01',
@@ -1004,6 +1231,30 @@ export const initialSupervisiManajerial: SupervisiManajerial[] = [
     evaluasiProgram: 'Kebersihan terjaga dengan baik berkat piket bergilir dan kesadaran warga sekolah.',
     rekomendasiTindakLanjut: 'Perbaikan 2 kran wastafel telah dialokasikan melalui dana pemeliharaan BOSP.',
     status: 'Perlu Perbaikan'
+  },
+  {
+    id: 'SUP-MAN-03',
+    aspekStandar: 'Standar Proses',
+    instrumen: 'Instrumen 3 Formulir Observasi Kelas 5 Komponen (Salafi Artika Dini, S.Pd - PKN)',
+    tanggalPemantauan: '2023-09-26',
+    petugasPemantau: 'Dra. Hj. Rosdiana, M.Pd. (Kepala Sekolah)',
+    hasilTemuan: '[Observasi Sangat Baik] 5/5 Komponen Terpenuhi. Menerapkan pembelajaran berdiferensiasi (konten, proses, produk) yang berpihak pada murid dan menyenangkan.',
+    evaluasiProgram: 'Pra-Observasi: Peserta didik mengidentifikasi tugas peran | Pasca: 92% siswa mencapai KKTP.',
+    rekomendasiTindakLanjut: 'Pertahankan praktik baik pembelajaran berdiferensiasi dan bagikan di Komunitas Belajar Kombel Guru.',
+    status: 'Sesuai Standar',
+    formulirSupervisiId: 'FORM-SUP-01'
+  },
+  {
+    id: 'SUP-MAN-04',
+    aspekStandar: 'Standar Proses',
+    instrumen: 'Instrumen 3 Formulir Observasi Kelas 5 Komponen (H. Muhammad Idris, S.Pd., M.Pd. - IPAS)',
+    tanggalPemantauan: '2024-08-15',
+    petugasPemantau: 'Dra. Hj. Rosdiana, M.Pd. (Kepala Sekolah)',
+    hasilTemuan: '[Observasi Sangat Baik] 5/5 Komponen Terpenuhi. Pemanfaatan Chromebook dan video 3D dalam pembelajaran berdiferensiasi sangat efektif.',
+    evaluasiProgram: 'Pra-Observasi: Simulasi organ pencernaan | Pasca: 95% siswa di atas KKTP.',
+    rekomendasiTindakLanjut: 'Diseminasi praktik baik pemanfaatan Canva Education untuk pembelajaran IPA di KKG Gugus.',
+    status: 'Sesuai Standar',
+    formulirSupervisiId: 'FORM-SUP-02'
   }
 ];
 

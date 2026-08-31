@@ -1,5 +1,6 @@
 import React from 'react';
 import { UserAccount, ProfilSekolah } from '../../../types';
+import { DEFAULT_LOGO_SEKOLAH } from '../../../data/brandingAssets';
 import { Modal } from '../../common/Modal';
 import {
   Printer,
@@ -81,14 +82,16 @@ export const KartuAksesLoginModal: React.FC<KartuAksesLoginModalProps> = ({
                 {/* Top Badge */}
                 <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 shadow-2xs">
-                      {profilSekolah.logoUrl ? (
-                        <img src={profilSekolah.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-                      ) : (
-                        <div className="w-full h-full bg-emerald-700 text-white rounded flex items-center justify-center font-black text-[10px]">
-                          {idx + 1}
-                        </div>
-                      )}
+                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                      <img
+                        src={profilSekolah.logoUrl || DEFAULT_LOGO_SEKOLAH}
+                        alt="Logo"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
+                        }}
+                        className="w-full h-full object-contain"
+                      />
                     </div>
                     <div>
                       <div className="text-[10px] font-bold text-slate-800 uppercase tracking-tight line-clamp-1">

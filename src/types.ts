@@ -305,6 +305,9 @@ export interface SupervisiAkademik {
   areaPeningkatan: string;
   tindakLanjut: string;
   status: 'Terjadwal' | 'Pra-Observasi' | 'Observasi Selesai' | 'Tuntas Ditindaklanjuti';
+  // Link to 3-stage supervision document
+  formulirSupervisiId?: string;
+  sinkronDariFormulir?: boolean;
 }
 
 export interface SupervisiManajerial {
@@ -317,6 +320,76 @@ export interface SupervisiManajerial {
   evaluasiProgram: string;
   rekomendasiTindakLanjut: string;
   status: 'Sesuai Standar' | 'Perlu Perbaikan' | 'Kritis';
+  // Optional link to 3-stage supervision document
+  formulirSupervisiId?: string;
+}
+
+// 6b. Formulir 3 Tahap Supervisi Pembelajaran (Pra-Observasi, Observasi Kelas 5 Komponen, Pasca-Observasi)
+export interface ItemObservasi5Komponen {
+  id: number;
+  nomor: number;
+  aspekDanStrategi: string;
+  ada: boolean; // Ada (✓) atau Tidak
+  catatanPengamatan: string;
+  catatanReferensiDefault?: string; // Teks bahan referensi permanen
+}
+
+export interface FormulirPraObservasiData {
+  tujuanPembelajaran: string;
+  aspekPengembangan: string;
+  strategiPembelajaran: string;
+  kesiapanModulAjar: boolean;
+  kesiapanMediaAjar: boolean;
+  kesiapanInstrumenAsesmen: boolean;
+  catatanPraObservasi: string;
+  catatanReferensiDefault?: string;
+}
+
+export interface FormulirObservasiData {
+  areaObservasi: ItemObservasi5Komponen[];
+  catatanTambahan: string;
+  catatanTambahanReferensiDefault?: string;
+  skorKelayakanPersen: number; // e.g. 100%
+  kategoriHasil: 'Sangat Baik' | 'Baik' | 'Cukup' | 'Perlu Pembinaan';
+}
+
+export interface FormulirPascaObservasiData {
+  refleksiGuru: string;
+  ketercapaianTujuan: string;
+  umpanBalikSupervisor: string;
+  rencanaTindakLanjut: string;
+  komitmenWaktu: string;
+  sasaranPerbaikan: string;
+  rekomendasiAkhir: string;
+  catatanReferensiDefault?: string;
+}
+
+export interface FormulirSupervisiLengkap {
+  id: string;
+  hariTanggal: string; // e.g. 'Selasa, 26 September 2023'
+  sekolah: string; // e.g. 'UPTD SPF SDN Lanto Dg. Pasewang'
+  namaGuru: string; // Observee
+  nipGuru: string;
+  mataPelajaran: string;
+  kelas: string; // e.g. '2 ( Dua )'
+  waktuPercakapan: string; // e.g. '10.00 – 10.15 ( 15 menit )'
+  namaSupervisor: string; // Observer
+  nipSupervisor?: string;
+  
+  tahapAktif?: 'pra' | 'observasi' | 'pasca' | 'ringkasan';
+  praObservasi: FormulirPraObservasiData;
+  observasi: FormulirObservasiData;
+  pascaObservasi: FormulirPascaObservasiData;
+  
+  sinkronKeManajerial: boolean;
+  manajerialRefId?: string;
+  sinkronKeAkademik?: boolean;
+  akademikRefId?: string;
+  statusDokumen: 'Draft' | 'Pra-Observasi Selesai' | 'Observasi Berjalan' | 'Pasca-Observasi Tuntas' | 'Disahkan';
+  tandaTanganSupervisor?: string;
+  tandaTanganGuru?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 7. Keuangan

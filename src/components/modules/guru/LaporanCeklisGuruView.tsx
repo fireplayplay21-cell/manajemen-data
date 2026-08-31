@@ -8,6 +8,11 @@ import {
 import {
   MASTER_JENIS_DOKUMEN_GURU
 } from '../../../data/initialData';
+import {
+  DEFAULT_LOGO_SEKOLAH,
+  DEFAULT_LOGO_MAKASSAR,
+  DEFAULT_LOGO_TUT_WURI
+} from '../../../data/brandingAssets';
 import { TARGET_DRIVE_FOLDER_URL } from '../../../services/driveService';
 import {
   CheckSquare,
@@ -894,25 +899,52 @@ export const LaporanCeklisGuruView: React.FC<LaporanCeklisGuruViewProps> = ({
       {/* VIEW MODE 3: FORMAT RESMI CETAK LAPORAN SUPERVISI GURU */}
       {viewMode === 'cetak' && (
         <div className="bg-white rounded-2xl border border-slate-300 p-8 shadow-md space-y-6 text-slate-900 print:border-none print:shadow-none print:p-0">
-          {/* Header Kop Surat Resmi */}
-          <div className="text-center border-b-2 border-slate-900 pb-4">
-            <div className="flex items-center justify-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-700 font-bold text-lg">
-                <Building2 className="w-8 h-8 text-blue-700" />
+          {/* Header Kop Surat Resmi Kedinasan */}
+          <div className="border-b-4 border-double border-slate-900 pb-4">
+            <div className="flex items-center justify-between gap-4">
+              {/* Logo Pemkot Makassar (Kiri) */}
+              <div className="w-16 h-16 flex items-center justify-center shrink-0">
+                <img
+                  src={profilSekolah.logoDinasUrl || DEFAULT_LOGO_MAKASSAR}
+                  alt="Logo Dinas Pemkot"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = DEFAULT_LOGO_MAKASSAR;
+                  }}
+                  className="w-full h-full object-contain"
+                />
               </div>
-              <div className="text-center">
-                <h4 className="text-xs font-bold tracking-widest uppercase text-slate-600">
-                  PEMERINTAH KOTA MAKASSAR • DINAS PENDIDIKAN
+
+              {/* Teks Lembaga & Sekolah (Tengah) */}
+              <div className="text-center flex-1 space-y-0.5">
+                <h4 className="text-xs font-bold tracking-widest uppercase text-slate-800">
+                  PEMERINTAH KOTA MAKASSAR
                 </h4>
-                <h2 className="text-lg font-black tracking-tight uppercase text-slate-900">
+                <h4 className="text-xs font-extrabold tracking-wider uppercase text-slate-800">
+                  DINAS PENDIDIKAN
+                </h4>
+                <h2 className="text-base sm:text-lg font-black tracking-tight uppercase text-slate-950">
                   {profilSekolah.namaSekolah}
                 </h2>
-                <p className="text-[11px] text-slate-600">
+                <p className="text-[11px] text-slate-700">
                   NPSN: {profilSekolah.npsn} • NSS: {profilSekolah.nss} • Akreditasi: {profilSekolah.akreditasi}
                 </p>
-                <p className="text-[10px] text-slate-500">
+                <p className="text-[10px] text-slate-600">
                   {profilSekolah.alamat}, Kec. {profilSekolah.kecamatan}, {profilSekolah.kota} | Email: {profilSekolah.email}
                 </p>
+              </div>
+
+              {/* Logo Tut Wuri Handayani / Kemendikbud (Kanan) */}
+              <div className="w-16 h-16 flex items-center justify-center shrink-0">
+                <img
+                  src={profilSekolah.tutWuriLogoUrl || DEFAULT_LOGO_TUT_WURI}
+                  alt="Logo Tut Wuri Handayani"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = DEFAULT_LOGO_TUT_WURI;
+                  }}
+                  className="w-full h-full object-contain"
+                />
               </div>
             </div>
           </div>

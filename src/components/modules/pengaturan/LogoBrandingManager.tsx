@@ -2,83 +2,48 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { ProfilSekolah } from '../../../types';
 import {
+  DEFAULT_LOGO_SEKOLAH,
+  DEFAULT_LOGO_MAKASSAR,
+  DEFAULT_LOGO_TUT_WURI
+} from '../../../data/brandingAssets';
+import {
   Upload,
   Image as ImageIcon,
   CheckCircle2,
   AlertCircle,
   RotateCcw,
   Sparkles,
-  Download,
   Eye,
-  FileText,
   Building,
   School,
   Stamp,
-  Layers,
   ShieldCheck,
-  Check,
-  ExternalLink,
   Trash2,
-  Maximize2,
-  FolderOpen
+  Info
 } from 'lucide-react';
-
-// Preset logo options for instant professional selection
-const LOGO_PRESETS = [
-  {
-    id: 'preset-lanto-blue',
-    name: 'Logo Resmi SDN Lanto Dg. Pasewang (Emas & Biru)',
-    desc: 'Lambang resmi dengan perisai biru, bintang emas, buku terbuka dan pena',
-    url: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=300'
-  },
-  {
-    id: 'preset-tutwuri',
-    name: 'Logo Tut Wuri Handayani (Kemendikbudristek)',
-    desc: 'Lambang pendidikan nasional standar Kementerian Pendidikan Dasar & Menengah',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Logo_Tut_Wuri_Handayani.png/300px-Logo_Tut_Wuri_Handayani.png'
-  },
-  {
-    id: 'preset-makassar',
-    name: 'Logo Pemerintah Kota Makassar (Dinas Pendidikan)',
-    desc: 'Lambang resmi Pemerintah Kota Makassar Sulawesi Selatan',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Coat_of_arms_of_Makassar.svg/240px-Coat_of_arms_of_Makassar.svg.png'
-  },
-  {
-    id: 'preset-sd-merahputih',
-    name: 'Logo Sekolah Dasar Merah Putih (SD Negeri)',
-    desc: 'Lambang perisai merah putih jenjang Sekolah Dasar Nasional',
-    url: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=300'
-  },
-  {
-    id: 'preset-adiwiyata',
-    name: 'Logo Sekolah Ramah Anak & Adiwiyata',
-    desc: 'Lambang sekolah berwawasan lingkungan hidup hijau dan ramah anak',
-    url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=300'
-  }
-];
 
 export const LogoBrandingManager: React.FC = () => {
   const { profilSekolah, updateProfilSekolah, showToast } = useApp();
 
-  // Local state for logos before saving
+  // Local state initialized with profilSekolah or default vector data URIs
   const [logoUtama, setLogoUtama] = useState<string>(
-    profilSekolah?.logoUrl || LOGO_PRESETS[0].url
+    profilSekolah?.logoUrl || DEFAULT_LOGO_SEKOLAH
   );
   const [logoDinas, setLogoDinas] = useState<string>(
-    profilSekolah?.logoDinasUrl || LOGO_PRESETS[2].url
+    profilSekolah?.logoDinasUrl || DEFAULT_LOGO_MAKASSAR
   );
   const [logoTutWuri, setLogoTutWuri] = useState<string>(
-    profilSekolah?.tutWuriLogoUrl || LOGO_PRESETS[1].url
+    profilSekolah?.tutWuriLogoUrl || DEFAULT_LOGO_TUT_WURI
   );
   const [stempelResmi, setStempelResmi] = useState<string>(
     profilSekolah?.stempelUrl || ''
   );
 
-  const [activePreviewTab, setActivePreviewTab] = useState<'sidebar' | 'kopsurat' | 'kartu' | 'login'>('sidebar');
-  const [isDragging, setIsDragging] = useState(false);
+  const [activePreviewTab, setActivePreviewTab] = useState<'kopsurat' | 'sidebar' | 'kartu' | 'login'>('kopsurat');
+  const [dragActiveZone, setDragActiveZone] = useState<'utama' | 'dinas' | 'tutwuri' | 'stempel' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileUtamaInputRef = useRef<HTMLInputElement>(null);
   const fileDinasInputRef = useRef<HTMLInputElement>(null);
   const fileTutWuriInputRef = useRef<HTMLInputElement>(null);
   const fileStempelInputRef = useRef<HTMLInputElement>(null);
@@ -109,28 +74,9 @@ export const LogoBrandingManager: React.FC = () => {
       }
     };
     reader.onerror = () => {
-      showToast('error', 'Gagal Membaca File', 'Terjadi kesalahan saat memproses gambar.');
+      showToast('error', 'Gagal Membaca File', 'Terjadi kesalahan saat memproses berkas gambar.');
     };
     reader.readAsDataURL(file);
-  };
-
-  // Handle Drag and drop for Main Logo
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processImageFile(e.dataTransfer.files[0], setLogoUtama, 'Logo Sekolah Utama');
-    }
   };
 
   // Save all logos to AppContext and LocalStorage
@@ -148,17 +94,17 @@ export const LogoBrandingManager: React.FC = () => {
 
     setTimeout(() => {
       setIsSaving(false);
-      showToast('success', 'Asset Web Diperbarui', 'Logo dan branding sekolah berhasil disimpan ke asset web & database.');
+      showToast('success', 'Asset Web Diperbarui', 'Logo dan branding sekolah berhasil disimpan ke asset web sistem.');
     }, 400);
   };
 
   // Reset to initial default logos
   const handleResetToDefaults = () => {
-    setLogoUtama(LOGO_PRESETS[0].url);
-    setLogoDinas(LOGO_PRESETS[2].url);
-    setLogoTutWuri(LOGO_PRESETS[1].url);
+    setLogoUtama(DEFAULT_LOGO_SEKOLAH);
+    setLogoDinas(DEFAULT_LOGO_MAKASSAR);
+    setLogoTutWuri(DEFAULT_LOGO_TUT_WURI);
     setStempelResmi('');
-    showToast('info', 'Diatur Ulang', 'Logo telah dikembalikan ke standar awal.');
+    showToast('info', 'Diatur Ulang', 'Seluruh logo telah dikembalikan ke logo resmi standar.');
   };
 
   return (
@@ -176,10 +122,10 @@ export const LogoBrandingManager: React.FC = () => {
               <span>Asset Web & Identitas Visual Sekolah</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
-              Manajemen Logo & Branding UPTD SPF SDN Lanto Dg. Pasewang
+              Manajemen Logo & Branding Sekolah
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Unggah logo sekolah, logo dinas pendidikan, dan logo pendamping untuk ditampilkan secara konsisten di seluruh antarmuka web, sidebar navigasi, kop surat dinas, serta kartu akses login guru.
+              Unggah file logo resmi sekolah, lambang dinas pendidikan / pemerintah daerah, dan logo Tut Wuri Handayani untuk ditampilkan secara serasi pada seluruh halaman website, kop surat dinas, kartu akses login guru, dan cetak dokumen resmi.
             </p>
           </div>
 
@@ -190,6 +136,7 @@ export const LogoBrandingManager: React.FC = () => {
               id="btn-reset-logo-defaults"
               onClick={handleResetToDefaults}
               className="px-4 py-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold rounded-xl border border-slate-700 transition-colors cursor-pointer flex items-center gap-2"
+              title="Kembalikan ke logo standar bawaan"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Reset Standar</span>
@@ -203,7 +150,7 @@ export const LogoBrandingManager: React.FC = () => {
               className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-500/30 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{isSaving ? 'Menyimpan Asset...' : 'Simpan ke Asset Web'}</span>
+              <span>{isSaving ? 'Menyimpan...' : 'Simpan ke Asset Web'}</span>
             </button>
           </div>
         </div>
@@ -218,8 +165,8 @@ export const LogoBrandingManager: React.FC = () => {
         <div className="lg:col-span-7 space-y-6">
           
           {/* Card 1: Logo Sekolah Utama (Header & Sidebar) */}
-          <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-xs space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold">
                   1
@@ -227,7 +174,7 @@ export const LogoBrandingManager: React.FC = () => {
                 <div>
                   <h4 className="text-sm font-bold text-slate-800">Logo Sekolah Utama</h4>
                   <p className="text-[11px] text-slate-500">
-                    Tampil pada Header Sidebar, Top Bar, dan Favicon Aplikasi
+                    Tampil pada Header Sidebar Navigasi, Top Bar, dan Kartu Login Guru
                   </p>
                 </div>
               </div>
@@ -238,46 +185,69 @@ export const LogoBrandingManager: React.FC = () => {
 
             {/* Upload Zone with Drag & Drop */}
             <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`p-6 rounded-2xl border-2 border-dashed transition-all flex flex-col sm:flex-row items-center gap-6 ${
-                isDragging
+              onDragOver={(e) => { e.preventDefault(); setDragActiveZone('utama'); }}
+              onDragLeave={(e) => { e.preventDefault(); setDragActiveZone(null); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragActiveZone(null);
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                  processImageFile(e.dataTransfer.files[0], setLogoUtama, 'Logo Sekolah Utama');
+                }
+              }}
+              className={`p-5 rounded-2xl border-2 border-dashed transition-all flex flex-col sm:flex-row items-center gap-5 ${
+                dragActiveZone === 'utama'
                   ? 'border-blue-500 bg-blue-50/80 scale-[1.01]'
                   : 'border-slate-300 bg-slate-50/60 hover:bg-slate-50'
               }`}
             >
-              {/* Image Preview Box with checkerboard background */}
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-slate-200 bg-white p-2 shadow-sm flex items-center justify-center shrink-0 relative overflow-hidden group">
-                <div
-                  className="w-full h-full rounded-xl bg-contain bg-center bg-no-repeat transition-transform group-hover:scale-105"
-                  style={{ backgroundImage: `url("${logoUtama}")` }}
+              {/* Image Preview Box */}
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-slate-200 bg-white p-2 shadow-xs flex items-center justify-center shrink-0 relative overflow-hidden">
+                <img
+                  src={logoUtama}
+                  alt="Logo Sekolah Utama"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
+                  }}
+                  className="w-full h-full object-contain"
                 />
               </div>
 
-              {/* Upload Prompts & File Input */}
+              {/* Upload Prompts & Action Buttons */}
               <div className="space-y-3 flex-1 text-center sm:text-left">
                 <div>
                   <p className="text-xs font-bold text-slate-800">
-                    Tarik & letakkan file logo di sini, atau klik tombol di bawah
+                    Unggah Logo Sekolah (PNG / SVG Transparan disarankan)
                   </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Format didukung: PNG (transparan direkomendasikan), JPG, SVG, WebP. Maksimal 3 MB.
+                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                    Tarik & letakkan file logo di sini, atau klik tombol pilih berkas. Maksimal 3 MB.
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => fileUtamaInputRef.current?.click()}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-xs"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Pilih Berkas Logo</span>
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLogoUtama(DEFAULT_LOGO_SEKOLAH);
+                      showToast('info', 'Logo Direset', 'Logo sekolah dikembalikan ke standar awal.');
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Gunakan Logo Standar</span>
+                  </button>
+
                   <input
-                    ref={fileInputRef}
+                    ref={fileUtamaInputRef}
                     type="file"
                     accept="image/*,.png,.jpg,.jpeg,.svg,.webp"
                     className="hidden"
@@ -290,63 +260,17 @@ export const LogoBrandingManager: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Preset Logo Selection Carousel / Grid */}
-            <div className="space-y-2.5 pt-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Pilihan Logo Preset Siap Pakai:</span>
-                </span>
-                <span className="text-[10px] text-slate-400">Klik untuk menerapkan instan</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {LOGO_PRESETS.map((preset) => {
-                  const isSelected = logoUtama === preset.url;
-                  return (
-                    <div
-                      key={preset.id}
-                      onClick={() => {
-                        setLogoUtama(preset.url);
-                        showToast('info', 'Preset Dipilih', `${preset.name} dipilih sebagai logo utama.`);
-                      }}
-                      className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20'
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 p-1 shrink-0 flex items-center justify-center">
-                        <img
-                          src={preset.url}
-                          alt={preset.name}
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold text-slate-800 truncate">{preset.name}</div>
-                        <div className="text-[10px] text-slate-500 line-clamp-1">{preset.desc}</div>
-                      </div>
-                      {isSelected && (
-                        <Check className="w-4 h-4 text-blue-600 shrink-0" />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
 
           {/* Card 2: Logo Pendamping Kop Surat & Dokumen Resmi */}
           <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-xs space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center font-bold">
                   2
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-800">Logo Kop Surat & Dokumen Resmi</h4>
+                  <h4 className="text-sm font-bold text-slate-800">Logo Kop Surat Resmi & Dokumen Dinas</h4>
                   <p className="text-[11px] text-slate-500">
                     Digunakan pada Kop Surat Dinas, Cetak Keputusan SK, Laporan RKAS & MOU
                   </p>
@@ -360,33 +284,67 @@ export const LogoBrandingManager: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               
               {/* Logo Pemkot Makassar / Dinas */}
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3">
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragActiveZone('dinas'); }}
+                onDragLeave={(e) => { e.preventDefault(); setDragActiveZone(null); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragActiveZone(null);
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    processImageFile(e.dataTransfer.files[0], setLogoDinas, 'Logo Dinas / Pemkot');
+                  }
+                }}
+                className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                  dragActiveZone === 'dinas'
+                    ? 'border-emerald-500 bg-emerald-50/70'
+                    : 'border-slate-200 bg-slate-50/50'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">Logo Dinas / Pemkot (Kiri)</span>
-                  <span className="text-[10px] font-semibold text-slate-500">Sisi Kiri Kop</span>
+                  <span className="text-xs font-bold text-slate-800">Logo Pemkot / Dinas</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                    SISI KIRI KOP
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200">
-                  <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 p-1 flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                  <div className="w-14 h-14 rounded-xl bg-slate-50 border border-slate-200 p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
                     <img
                       src={logoDinas}
                       alt="Logo Dinas"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = DEFAULT_LOGO_MAKASSAR;
+                      }}
                       className="w-full h-full object-contain"
                     />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[11px] font-bold text-slate-700 truncate">Kota Makassar</div>
-                    <button
-                      type="button"
-                      onClick={() => fileDinasInputRef.current?.click()}
-                      className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
-                    >
-                      Ganti Logo Dinas...
-                    </button>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="text-xs font-bold text-slate-800 truncate">Kota Makassar</div>
+                    <p className="text-[10px] text-slate-500">Lambang Pemerintah Daerah</p>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => fileDinasInputRef.current?.click()}
+                        className="text-[11px] text-emerald-700 hover:text-emerald-900 font-bold cursor-pointer underline"
+                      >
+                        Ganti Logo...
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLogoDinas(DEFAULT_LOGO_MAKASSAR);
+                          showToast('info', 'Logo Direset', 'Logo dinas dikembalikan ke standar Makassar.');
+                        }}
+                        className="text-[10px] text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    </div>
                     <input
                       ref={fileDinasInputRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.png,.jpg,.jpeg,.svg,.webp"
                       className="hidden"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
@@ -399,33 +357,67 @@ export const LogoBrandingManager: React.FC = () => {
               </div>
 
               {/* Logo Tut Wuri Handayani / Kanan */}
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3">
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragActiveZone('tutwuri'); }}
+                onDragLeave={(e) => { e.preventDefault(); setDragActiveZone(null); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragActiveZone(null);
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    processImageFile(e.dataTransfer.files[0], setLogoTutWuri, 'Logo Tut Wuri');
+                  }
+                }}
+                className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                  dragActiveZone === 'tutwuri'
+                    ? 'border-emerald-500 bg-emerald-50/70'
+                    : 'border-slate-200 bg-slate-50/50'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">Logo Tut Wuri (Kanan)</span>
-                  <span className="text-[10px] font-semibold text-slate-500">Sisi Kanan Kop</span>
+                  <span className="text-xs font-bold text-slate-800">Logo Tut Wuri Handayani</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                    SISI KANAN KOP
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200">
-                  <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 p-1 flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                  <div className="w-14 h-14 rounded-xl bg-slate-50 border border-slate-200 p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
                     <img
                       src={logoTutWuri}
                       alt="Logo Tut Wuri"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = DEFAULT_LOGO_TUT_WURI;
+                      }}
                       className="w-full h-full object-contain"
                     />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[11px] font-bold text-slate-700 truncate">Tut Wuri Handayani</div>
-                    <button
-                      type="button"
-                      onClick={() => fileTutWuriInputRef.current?.click()}
-                      className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
-                    >
-                      Ganti Logo Tut Wuri...
-                    </button>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="text-xs font-bold text-slate-800 truncate">Kemendikbudristek</div>
+                    <p className="text-[10px] text-slate-500">Lambang Pendidikan Nasional</p>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => fileTutWuriInputRef.current?.click()}
+                        className="text-[11px] text-emerald-700 hover:text-emerald-900 font-bold cursor-pointer underline"
+                      >
+                        Ganti Logo...
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLogoTutWuri(DEFAULT_LOGO_TUT_WURI);
+                          showToast('info', 'Logo Direset', 'Logo Tut Wuri dikembalikan ke standar.');
+                        }}
+                        className="text-[10px] text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    </div>
                     <input
                       ref={fileTutWuriInputRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.png,.jpg,.jpeg,.svg,.webp"
                       className="hidden"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
@@ -440,41 +432,64 @@ export const LogoBrandingManager: React.FC = () => {
             </div>
 
             {/* Cap Stempel Resmi Sekolah */}
-            <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3">
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragActiveZone('stempel'); }}
+              onDragLeave={(e) => { e.preventDefault(); setDragActiveZone(null); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragActiveZone(null);
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                  processImageFile(e.dataTransfer.files[0], setStempelResmi, 'Stempel Resmi');
+                }
+              }}
+              className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                dragActiveZone === 'stempel'
+                  ? 'border-purple-500 bg-purple-50/70'
+                  : 'border-slate-200 bg-slate-50/50'
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Stamp className="w-4 h-4 text-purple-600" />
                   <span className="text-xs font-bold text-slate-800">Stempel / Cap Resmi Sekolah (Opsional)</span>
                 </div>
-                <span className="text-[10px] font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
-                  PNG Transparan
+                <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                  PNG TRANSPARAN
                 </span>
               </div>
 
               <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
                 <div className="w-14 h-14 rounded-xl border-2 border-dashed border-purple-200 bg-purple-50/30 flex items-center justify-center shrink-0 overflow-hidden">
                   {stempelResmi ? (
-                    <img src={stempelResmi} alt="Stempel Resmi" className="w-full h-full object-contain" />
+                    <img
+                      src={stempelResmi}
+                      alt="Stempel Resmi"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-contain"
+                    />
                   ) : (
                     <Stamp className="w-6 h-6 text-purple-300" />
                   )}
                 </div>
                 <div className="flex-1 space-y-1">
                   <p className="text-[11px] text-slate-600">
-                    {stempelResmi ? 'Stempel digital aktif untuk tanda tangan & legalitas dokumen.' : 'Belum ada stempel digital.'}
+                    {stempelResmi ? 'Stempel digital aktif untuk tanda tangan & legalitas dokumen cetak.' : 'Belum ada stempel digital terpasang.'}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => fileStempelInputRef.current?.click()}
-                      className="text-xs text-purple-700 hover:text-purple-900 font-bold cursor-pointer"
+                      className="text-xs text-purple-700 hover:text-purple-900 font-bold cursor-pointer underline"
                     >
                       {stempelResmi ? 'Ganti File Stempel...' : '+ Unggah Stempel PNG...'}
                     </button>
                     {stempelResmi && (
                       <button
                         type="button"
-                        onClick={() => setStempelResmi('')}
+                        onClick={() => {
+                          setStempelResmi('');
+                          showToast('info', 'Stempel Dihapus', 'Stempel resmi digital dikosongkan.');
+                        }}
                         className="text-xs text-rose-600 hover:text-rose-800 font-semibold cursor-pointer"
                       >
                         Hapus
@@ -483,7 +498,7 @@ export const LogoBrandingManager: React.FC = () => {
                     <input
                       ref={fileStempelInputRef}
                       type="file"
-                      accept="image/png"
+                      accept="image/png,.png"
                       className="hidden"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
@@ -517,22 +532,11 @@ export const LogoBrandingManager: React.FC = () => {
             </div>
 
             {/* Preview Tab Buttons */}
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setActivePreviewTab('sidebar')}
-                className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer text-center ${
-                  activePreviewTab === 'sidebar'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Sidebar Nav
-              </button>
+            <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl">
               <button
                 type="button"
                 onClick={() => setActivePreviewTab('kopsurat')}
-                className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer text-center ${
+                className={`py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-center ${
                   activePreviewTab === 'kopsurat'
                     ? 'bg-white text-blue-700 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -542,27 +546,128 @@ export const LogoBrandingManager: React.FC = () => {
               </button>
               <button
                 type="button"
+                onClick={() => setActivePreviewTab('sidebar')}
+                className={`py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-center ${
+                  activePreviewTab === 'sidebar'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Sidebar
+              </button>
+              <button
+                type="button"
                 onClick={() => setActivePreviewTab('kartu')}
-                className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer text-center ${
+                className={`py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-center ${
                   activePreviewTab === 'kartu'
                     ? 'bg-white text-blue-700 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Kartu Guru
+                Kartu NIP
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePreviewTab('login')}
+                className={`py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-center ${
+                  activePreviewTab === 'login'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Login
               </button>
             </div>
 
-            {/* PREVIEW CONTAINER 1: SIDEBAR WEB */}
+            {/* PREVIEW CONTAINER 1: KOP SURAT RESMI */}
+            {activePreviewTab === 'kopsurat' && (
+              <div className="space-y-3 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700">Preview Kop Surat Resmi Kedinasan:</span>
+                  <span className="text-[10px] text-slate-400">Standar Dokumen Resmi</span>
+                </div>
+                
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-slate-300 shadow-sm space-y-3 text-slate-900">
+                  {/* Kop Header */}
+                  <div className="flex items-center justify-between gap-3 border-b-4 border-double border-slate-900 pb-3">
+                    <div className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0 p-0.5">
+                      <img
+                        src={logoDinas}
+                        alt="Logo Pemkot"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = DEFAULT_LOGO_MAKASSAR;
+                        }}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+
+                    <div className="text-center flex-1 space-y-0.5">
+                      <div className="text-[9px] font-bold uppercase tracking-widest text-slate-700">
+                        PEMERINTAH KOTA MAKASSAR
+                      </div>
+                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-800">
+                        DINAS PENDIDIKAN
+                      </div>
+                      <div className="text-xs sm:text-sm font-black uppercase text-slate-950 tracking-tight leading-tight">
+                        {profilSekolah?.namaSekolah || 'UPTD SPF SDN LANTO DG. PASEWANG'}
+                      </div>
+                      <div className="text-[8px] text-slate-600 leading-tight">
+                        {profilSekolah?.alamat || 'Jl. Lanto Dg. Pasewang No. 45'}, {profilSekolah?.kota || 'Kota Makassar'} • NPSN: {profilSekolah?.npsn || '40307399'}
+                      </div>
+                      <div className="text-[8px] text-slate-500 leading-tight">
+                        Email: {profilSekolah?.email || 'sdnlanto@makassar.sch.id'} | Akreditasi: {profilSekolah?.akreditasi || 'A (Unggul)'}
+                      </div>
+                    </div>
+
+                    <div className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0 p-0.5">
+                      <img
+                        src={logoTutWuri}
+                        alt="Logo Tut Wuri"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = DEFAULT_LOGO_TUT_WURI;
+                        }}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Body Simulation */}
+                  <div className="text-center py-2 space-y-1">
+                    <div className="text-[10px] font-bold uppercase underline text-slate-800">
+                      SURAT KEPUTUSAN KEPALA SEKOLAH
+                    </div>
+                    <div className="text-[8px] text-slate-500">
+                      Nomor: 421.2 / 084 / DISDIK / {new Date().getFullYear()}
+                    </div>
+                  </div>
+
+                  {stempelResmi && (
+                    <div className="flex justify-end pr-4 pt-1">
+                      <div className="w-12 h-12 opacity-80 rotate-[-8deg]">
+                        <img src={stempelResmi} alt="Stempel Preview" className="w-full h-full object-contain" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* PREVIEW CONTAINER 2: SIDEBAR WEB */}
             {activePreviewTab === 'sidebar' && (
               <div className="space-y-3 animate-in fade-in">
                 <div className="text-xs font-bold text-slate-700">Preview Header Sidebar (Navigasi Kiri):</div>
                 <div className="bg-[#0f172a] text-white p-4 rounded-2xl border border-slate-700 space-y-3 shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md border border-slate-600">
+                    <div className="w-11 h-11 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md border border-slate-600 overflow-hidden">
                       <img
                         src={logoUtama}
                         alt="Logo Preview"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
+                        }}
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -582,36 +687,6 @@ export const LogoBrandingManager: React.FC = () => {
               </div>
             )}
 
-            {/* PREVIEW CONTAINER 2: KOP SURAT RESMI */}
-            {activePreviewTab === 'kopsurat' && (
-              <div className="space-y-3 animate-in fade-in">
-                <div className="text-xs font-bold text-slate-700">Preview Kop Surat & Dokumen Resmi:</div>
-                <div className="bg-white p-4 rounded-2xl border-2 border-slate-300 shadow-xs space-y-2 text-slate-900">
-                  <div className="flex items-center justify-between gap-3 border-b-2 border-slate-900 pb-2">
-                    <img src={logoDinas} alt="Logo Pemkot" className="w-10 h-10 object-contain shrink-0" />
-                    <div className="text-center flex-1">
-                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-700">
-                        PEMERINTAH KOTA MAKASSAR
-                      </div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-800">
-                        DINAS PENDIDIKAN
-                      </div>
-                      <div className="text-xs font-black uppercase text-slate-950">
-                        {profilSekolah?.namaSekolah}
-                      </div>
-                      <div className="text-[8px] text-slate-500">
-                        {profilSekolah?.alamat}, {profilSekolah?.kota} • NPSN: {profilSekolah?.npsn}
-                      </div>
-                    </div>
-                    <img src={logoTutWuri} alt="Logo Tut Wuri" className="w-10 h-10 object-contain shrink-0" />
-                  </div>
-                  <div className="text-[10px] text-slate-400 italic text-center py-2">
-                    [ Konten Surat Dinas / SK / Laporan Resmi ]
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* PREVIEW CONTAINER 3: KARTU LOGIN GURU */}
             {activePreviewTab === 'kartu' && (
               <div className="space-y-3 animate-in fade-in">
@@ -619,14 +694,22 @@ export const LogoBrandingManager: React.FC = () => {
                 <div className="bg-emerald-950/5 border-2 border-emerald-300 rounded-2xl p-3.5 space-y-2.5">
                   <div className="flex items-center justify-between border-b border-emerald-200 pb-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-white p-0.5 border border-emerald-300 flex items-center justify-center">
-                        <img src={logoUtama} alt="Logo" className="w-full h-full object-contain" />
+                      <div className="w-7 h-7 rounded bg-white p-0.5 border border-emerald-300 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={logoUtama}
+                          alt="Logo"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
+                          }}
+                          className="w-full h-full object-contain"
+                        />
                       </div>
-                      <div className="text-[10px] font-bold text-emerald-950 uppercase">
+                      <div className="text-[10px] font-bold text-emerald-950 uppercase truncate max-w-[170px]">
                         {profilSekolah?.namaSekolah}
                       </div>
                     </div>
-                    <span className="text-[8px] font-black bg-emerald-200 text-emerald-900 px-1.5 py-0.2 rounded">
+                    <span className="text-[8px] font-black bg-emerald-200 text-emerald-900 px-1.5 py-0.2 rounded shrink-0">
                       KARTU NIP
                     </span>
                   </div>
@@ -644,11 +727,41 @@ export const LogoBrandingManager: React.FC = () => {
               </div>
             )}
 
+            {/* PREVIEW CONTAINER 4: LOGIN PAGE */}
+            {activePreviewTab === 'login' && (
+              <div className="space-y-3 animate-in fade-in">
+                <div className="text-xs font-bold text-slate-700">Preview Halaman Login:</div>
+                <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-white space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-white p-1 border border-slate-300 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={logoUtama}
+                        alt="Logo"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
+                        }}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase text-white tracking-wider">
+                        SIM LANTO
+                      </div>
+                      <div className="text-[9px] text-slate-400 truncate max-w-[200px]">
+                        {profilSekolah?.namaSekolah}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Bottom Quick Advice */}
-            <div className="p-3 bg-blue-50/70 rounded-2xl border border-blue-200/70 text-[11px] text-blue-900 space-y-1">
+            <div className="p-3.5 bg-blue-50/70 rounded-2xl border border-blue-200/70 text-[11px] text-blue-900 space-y-1">
               <div className="font-bold flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-blue-600" />
-                <span>Penyimpanan Otomatis</span>
+                <span>Penyimpanan Aman & Permanen</span>
               </div>
               <p className="text-blue-800 leading-relaxed">
                 Setelah mengklik tombol <strong>Simpan ke Asset Web</strong>, seluruh file logo tersimpan secara permanen di cache sistem lokal dan otomatis dicadangkan pada database awan.
