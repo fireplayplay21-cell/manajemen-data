@@ -58,6 +58,18 @@ export const ASSET_FOTO_PRESETS = [
     nama: 'Guru Mapel (Wanita - Formal)',
     url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
     kategori: 'Wanita'
+  },
+  {
+    id: 'preset-siswa-putra-1',
+    nama: 'Peserta Didik Putra (Seragam Sekolah)',
+    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+    kategori: 'Siswa / Pelajar'
+  },
+  {
+    id: 'preset-siswa-putri-1',
+    nama: 'Peserta Didik Putri (Seragam Sekolah)',
+    url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80',
+    kategori: 'Siswa / Pelajar'
   }
 ];
 

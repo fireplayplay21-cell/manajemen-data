@@ -3,6 +3,7 @@ import { useApp } from '../../../context/AppContext';
 import { Siswa } from '../../../types';
 import { Modal } from '../../common/Modal';
 import { UploadMassalSiswaModal } from './UploadMassalSiswaModal';
+import { PasFotoUploader } from '../../common/PasFotoUploader';
 import {
   GraduationCap,
   Users,
@@ -18,11 +19,15 @@ import {
   UserCheck,
   UserX,
   School,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Camera,
+  Image as ImageIcon,
+  Check,
+  Download
 } from 'lucide-react';
 
 export const DataSiswaSection: React.FC = () => {
-  const { siswaList, kelasList, addSiswa, bulkAddSiswa, updateSiswa, deleteSiswa } = useApp();
+  const { siswaList, kelasList, addSiswa, bulkAddSiswa, updateSiswa, deleteSiswa, showToast } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedKelas, setSelectedKelas] = useState<string>('Semua');
@@ -35,6 +40,7 @@ export const DataSiswaSection: React.FC = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedSiswa, setSelectedSiswa] = useState<Siswa | null>(null);
   const [editingSiswa, setEditingSiswa] = useState<Siswa | null>(null);
+  const [photoTargetSiswa, setPhotoTargetSiswa] = useState<Siswa | null>(null);
 
   const [formData, setFormData] = useState<Omit<Siswa, 'id'>>({
     nisn: '',
@@ -47,7 +53,8 @@ export const DataSiswaSection: React.FC = () => {
     namaOrtu: '',
     teleponOrtu: '',
     alamat: '',
-    status: 'Aktif'
+    status: 'Aktif',
+    foto: ''
   });
 
   // Extract unique class list from either kelasList or siswaList
@@ -71,7 +78,8 @@ export const DataSiswaSection: React.FC = () => {
       namaOrtu: '',
       teleponOrtu: '',
       alamat: '',
-      status: 'Aktif'
+      status: 'Aktif',
+      foto: ''
     });
     setIsModalOpen(true);
   };
@@ -89,9 +97,21 @@ export const DataSiswaSection: React.FC = () => {
       namaOrtu: siswa.namaOrtu,
       teleponOrtu: siswa.teleponOrtu,
       alamat: siswa.alamat,
-      status: siswa.status
+      status: siswa.status,
+      foto: siswa.foto || ''
     });
     setIsModalOpen(true);
+  };
+
+  const handleApplyPhoto = (photoDataUrl: string) => {
+    if (!photoTargetSiswa) return;
+    updateSiswa(photoTargetSiswa.id, { foto: photoDataUrl });
+    if (photoDataUrl) {
+      showToast('success', 'Pas Foto Berhasil Disimpan', `Pas foto untuk ${photoTargetSiswa.nama} telah berhasil diperbarui.`);
+    } else {
+      showToast('info', 'Pas Foto Dihapus', `Pas foto untuk ${photoTargetSiswa.nama} telah dihapus dari sistem.`);
+    }
+    setPhotoTargetSiswa(null);
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -304,14 +324,38 @@ export const DataSiswaSection: React.FC = () => {
                   <tr key={siswa.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-start gap-2.5">
-                        <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 ${
-                            siswa.jenisKelamin === 'L'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-pink-100 text-pink-700'
-                          }`}
-                        >
-                          {siswa.nama.charAt(0)}
+                        <div className="relative group/avatar shrink-0 mt-0.5">
+                          {siswa.foto ? (
+                            <img
+                              src={siswa.foto}
+                              alt={siswa.nama}
+                              referrerPolicy="no-referrer"
+                              className="w-8 h-10 object-cover object-top rounded-lg border border-slate-300 shadow-2xs cursor-pointer"
+                              onClick={() => setPhotoTargetSiswa(siswa)}
+                              title="Klik untuk ganti / perbesar pas foto"
+                            />
+                          ) : (
+                            <div
+                              onClick={() => setPhotoTargetSiswa(siswa)}
+                              className={`w-8 h-10 rounded-lg flex flex-col items-center justify-center font-bold text-xs border cursor-pointer ${
+                                siswa.jenisKelamin === 'L'
+                                  ? 'bg-blue-100 border-blue-200 text-blue-700'
+                                  : 'bg-pink-100 border-pink-200 text-pink-700'
+                              }`}
+                              title="Klik untuk unggah pas foto 3x4"
+                            >
+                              <span>{siswa.nama.charAt(0)}</span>
+                              <span className="text-[8px] font-normal opacity-70">3x4</span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setPhotoTargetSiswa(siswa)}
+                            title={siswa.foto ? 'Ganti / Hapus Pas Foto Siswa' : 'Unggah Pas Foto Siswa'}
+                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-slate-900 text-white flex items-center justify-center hover:bg-emerald-600 shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Camera className="w-2.5 h-2.5" />
+                          </button>
                         </div>
                         <div>
                           <button
@@ -324,6 +368,12 @@ export const DataSiswaSection: React.FC = () => {
                             <span>NISN: {siswa.nisn || '-'}</span>
                             <span>•</span>
                             <span>NIS: {siswa.nis || '-'}</span>
+                            {siswa.foto && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <Check className="w-2.5 h-2.5" />
+                                Foto 3x4
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -378,16 +428,23 @@ export const DataSiswaSection: React.FC = () => {
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
+                          onClick={() => setPhotoTargetSiswa(siswa)}
+                          title="Ganti / Kelola Pas Foto Siswa"
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => handleOpenEdit(siswa)}
                           title="Edit Siswa"
-                          className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                          className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(siswa.id, siswa.nama)}
                           title="Hapus Siswa"
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -536,19 +593,33 @@ export const DataSiswaSection: React.FC = () => {
                 placeholder="Jl. Lanto Dg. Pasewang No. ..."
               />
             </div>
+
+            {/* Pas Foto 3x4 Uploader */}
+            <div className="sm:col-span-2 pt-2 border-t border-slate-100">
+              <label className="block text-slate-700 font-bold mb-2">
+                Pas Foto Siswa (Rasio Resmi 3x4)
+              </label>
+              <PasFotoUploader
+                currentPhotoUrl={formData.foto}
+                onPhotoChange={(newPhotoUrl) => setFormData(prev => ({ ...prev, foto: newPhotoUrl }))}
+                personName={formData.nama || 'Siswa'}
+                gender={formData.jenisKelamin}
+                aspectRatio="3x4"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors text-xs font-medium"
+              className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors text-xs font-medium cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs font-semibold shadow-xs"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs font-semibold shadow-xs cursor-pointer"
             >
               {editingSiswa ? 'Simpan Perubahan' : 'Tambah Siswa'}
             </button>
@@ -564,26 +635,65 @@ export const DataSiswaSection: React.FC = () => {
           title={`Biodata Siswa: ${selectedSiswa.nama}`}
         >
           <div className="space-y-4 text-xs">
-            <div className="flex items-center gap-3 p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white ${
-                  selectedSiswa.jenisKelamin === 'L' ? 'bg-blue-600' : 'bg-pink-600'
-                }`}
-              >
-                {selectedSiswa.nama.charAt(0)}
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-800 text-sm">{selectedSiswa.nama}</h4>
-                <p className="text-slate-600">{selectedSiswa.kelas} • NISN: {selectedSiswa.nisn}</p>
-                <span
-                  className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                    selectedSiswa.status === 'Aktif'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-700'
+            <div className="flex items-center gap-4 p-4 bg-emerald-50/70 border border-emerald-100 rounded-xl">
+              {selectedSiswa.foto ? (
+                <div className="relative group shrink-0">
+                  <img
+                    src={selectedSiswa.foto}
+                    alt={selectedSiswa.nama}
+                    referrerPolicy="no-referrer"
+                    className="w-16 h-22 object-cover object-top rounded-xl border-2 border-emerald-400 shadow-sm"
+                  />
+                  <div className="absolute bottom-0 inset-x-0 bg-slate-900/60 rounded-b-lg text-center py-0.5">
+                    <span className="text-[8px] font-bold text-white uppercase">3x4 RESMI</span>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className={`w-16 h-22 rounded-xl flex flex-col items-center justify-center font-bold text-lg text-white shrink-0 border-2 ${
+                    selectedSiswa.jenisKelamin === 'L' ? 'bg-blue-600 border-blue-700' : 'bg-pink-600 border-pink-700'
                   }`}
                 >
-                  Status: {selectedSiswa.status}
-                </span>
+                  <span>{selectedSiswa.nama.charAt(0)}</span>
+                  <span className="text-[9px] font-normal opacity-80 mt-1">Belum Ada Foto</span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-slate-800 text-sm truncate">{selectedSiswa.nama}</h4>
+                <p className="text-slate-600 text-xs mt-0.5">{selectedSiswa.kelas} • NISN: {selectedSiswa.nisn || '-'}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      selectedSiswa.status === 'Aktif'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    Status: {selectedSiswa.status}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = selectedSiswa;
+                      setIsDetailModalOpen(false);
+                      setPhotoTargetSiswa(target);
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                  >
+                    <Camera className="w-3 h-3" />
+                    <span>{selectedSiswa.foto ? 'Ganti / Hapus Foto' : 'Unggah Pas Foto'}</span>
+                  </button>
+                  {selectedSiswa.foto && (
+                    <a
+                      href={selectedSiswa.foto}
+                      download={`PasFoto_Siswa_${selectedSiswa.nama.replace(/\s+/g, '_')}.jpg`}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Unduh</span>
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -624,9 +734,64 @@ export const DataSiswaSection: React.FC = () => {
             <div className="flex justify-end pt-3 border-t border-slate-200">
               <button
                 onClick={() => setIsDetailModalOpen(false)}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-medium"
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-medium cursor-pointer"
               >
                 Tutup
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal Quick Foto Siswa (Upload / Camera / Preset / Hapus) */}
+      {photoTargetSiswa && (
+        <Modal
+          isOpen={!!photoTargetSiswa}
+          onClose={() => setPhotoTargetSiswa(null)}
+          title={`Kelola Pas Foto: ${photoTargetSiswa.nama}`}
+          subtitle={`Format rasio resmi 3x4 untuk ${photoTargetSiswa.nama} (${photoTargetSiswa.kelas})`}
+        >
+          <div className="space-y-4">
+            <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-13 rounded-lg overflow-hidden border border-blue-300 bg-white shrink-0">
+                  {photoTargetSiswa.foto ? (
+                    <img
+                      src={photoTargetSiswa.foto}
+                      alt={photoTargetSiswa.nama}
+                      className="w-full h-full object-cover object-top"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-800 font-bold text-xs">
+                      {photoTargetSiswa.nama.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800 text-xs">{photoTargetSiswa.nama}</h4>
+                  <p className="text-[11px] text-blue-700 font-semibold">{photoTargetSiswa.kelas} • NISN: {photoTargetSiswa.nisn || '-'}</p>
+                  <p className="text-[10px] text-slate-500">Pas foto disimpan dan dikompresi otomatis ke rasio 3x4.</p>
+                </div>
+              </div>
+            </div>
+
+            <PasFotoUploader
+              currentPhotoUrl={photoTargetSiswa.foto}
+              onPhotoChange={(newPhotoUrl) => {
+                handleApplyPhoto(newPhotoUrl);
+              }}
+              personName={photoTargetSiswa.nama}
+              gender={photoTargetSiswa.jenisKelamin}
+              aspectRatio="3x4"
+            />
+
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setPhotoTargetSiswa(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Selesai
               </button>
             </div>
           </div>

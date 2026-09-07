@@ -494,16 +494,16 @@ export const PengaturanAdminView: React.FC = () => {
           onClick={() => setActiveSubTab('logo')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
             activeSubTab === 'logo'
-              ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80'
+              ? 'bg-white text-blue-700 shadow-sm border border-slate-200/80'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
           }`}
         >
-          <ImageIcon className="w-4 h-4 text-indigo-600" />
+          <ImageIcon className="w-4 h-4 text-blue-600" />
           <span>Logo Sekolah</span>
           <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase ${
-            activeSubTab === 'logo' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-200 text-slate-600'
+            activeSubTab === 'logo' ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-600'
           }`}>
-            LOGO
+            UNGGAH & KUNCI
           </span>
         </button>
 

@@ -64,6 +64,10 @@ export const DEFAULT_LOGO_SEKOLAH = `data:image/svg+xml;utf8,${encodeURIComponen
 </svg>
 `)}`;
 
+// Logo Resmi Terkunci Permanen untuk SDN Lanto Dg. Pasewang
+// Diberikan proteksi agar tidak pernah dapat diganti atau di-override dengan logo lain.
+export const LOCKED_OFFICIAL_LOGO = DEFAULT_LOGO_SEKOLAH;
+
 // 2. Logo Resmi Pemerintah Kota Makassar (Lambang Pemkot Makassar - Kapal Pinisi, Perisai, Bintang, Padi & Kapas)
 export const DEFAULT_LOGO_MAKASSAR = `data:image/svg+xml;utf8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%">

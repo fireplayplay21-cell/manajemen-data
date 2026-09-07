@@ -213,6 +213,7 @@ export interface Siswa {
   teleponOrtu: string;
   alamat: string;
   status: 'Aktif' | 'Pindah' | 'Lulus';
+  foto?: string;
 }
 
 export interface PresensiHarian {

@@ -1,46 +1,43 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { ProfilSekolah } from '../../../types';
 import { DEFAULT_LOGO_SEKOLAH } from '../../../data/brandingAssets';
 import {
   Upload,
   Image as ImageIcon,
   CheckCircle2,
-  RotateCcw,
-  Sparkles,
+  RefreshCw,
+  Lock,
   ShieldCheck,
+  FileCheck,
+  AlertCircle,
+  Sparkles,
   Layout,
   Check,
-  Info
+  Info,
+  Trash2
 } from 'lucide-react';
 
 export const LogoBrandingManager: React.FC = () => {
   const { profilSekolah, updateProfilSekolah, showToast } = useApp();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Local state initialized with profilSekolah or default vector data URIs
-  const [logoUtama, setLogoUtama] = useState<string>(
+  const [isDragging, setIsDragging] = useState(false);
+  const [previewLogo, setPreviewLogo] = useState<string>(
     profilSekolah?.logoUrl || DEFAULT_LOGO_SEKOLAH
   );
-
-  const [dragActiveZone, setDragActiveZone] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasNewSelection, setHasNewSelection] = useState(false);
 
-  const fileUtamaInputRef = useRef<HTMLInputElement>(null);
-
-  // Convert uploaded image file to Base64 Data URL
-  const processImageFile = (
-    file: File,
-    onSuccess: (dataUrl: string) => void,
-    label: string = 'Logo Sekolah Utama'
-  ) => {
+  // Proses berkas gambar yang dipilih atau di-drop
+  const handleFileProcess = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      showToast('error', 'Format Tidak Didukung', 'Harap unggah file gambar (PNG, JPG, SVG, WebP).');
+      showToast('error', 'Format Tidak Didukung', 'Harap unggah berkas gambar (PNG, JPG, JPEG, SVG, atau WebP).');
       return;
     }
 
-    // Limit size to max 3MB for high performance storage
-    if (file.size > 3 * 1024 * 1024) {
-      showToast('error', 'Ukuran Terlalu Besar', 'Ukuran gambar maksimal 3 MB.');
+    // Maksimum 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('error', 'Ukuran Terlalu Besar', 'Ukuran berkas logo maksimal 5 MB.');
       return;
     }
 
@@ -48,253 +45,362 @@ export const LogoBrandingManager: React.FC = () => {
     reader.onload = (e) => {
       const result = e.target?.result as string;
       if (result) {
-        onSuccess(result);
-        showToast('success', 'Gambar Berhasil Dimuat', `${label} berhasil diunggah dan siap disimpan.`);
+        setPreviewLogo(result);
+        setHasNewSelection(true);
+        showToast('info', 'Pratinjau Logo Siap', 'Logo berhasil dimuat. Klik "Simpan & Kunci Logo" untuk menerapkan secara permanen.');
       }
     };
     reader.onerror = () => {
-      showToast('error', 'Gagal Membaca File', 'Terjadi kesalahan saat memproses berkas gambar.');
+      showToast('error', 'Gagal Membaca File', 'Terjadi kesalahan saat memproses gambar logo.');
     };
     reader.readAsDataURL(file);
   };
 
-  // Save logo to AppContext, Cloud Firestore, and LocalStorage
-  const handleSaveLogo = () => {
-    setIsSaving(true);
-    const updatedProfil: ProfilSekolah = {
-      ...profilSekolah,
-      logoUrl: logoUtama
-    };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileProcess(file);
+    }
+  };
 
-    // Save custom logo override to localStorage to prevent automatic reset on login
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileProcess(file);
+    }
+  };
+
+  // Simpan dan Kunci Logo agar tidak berganti saat login
+  const handleSaveAndLock = () => {
+    setIsSaving(true);
+
     try {
-      localStorage.setItem('school_logo_custom', logoUtama);
-    } catch (err) {
-      console.warn('Gagal menyimpan logo ke localStorage', err);
+      localStorage.setItem('school_logo_custom', previewLogo);
+      localStorage.setItem('school_logo_locked', 'true');
+    } catch (e) {
+      console.warn('Gagal menyimpan ke cache lokal:', e);
     }
 
-    updateProfilSekolah(updatedProfil);
+    updateProfilSekolah({
+      logoUrl: previewLogo
+    });
 
     setTimeout(() => {
       setIsSaving(false);
-      showToast('success', 'Logo Berhasil Disimpan', 'Logo resmi sekolah berhasil diperbarui dan tersimpan permanen.');
+      setHasNewSelection(false);
+      showToast(
+        'success',
+        'Logo Berhasil Disimpan & Dikunci',
+        'Logo sekolah baru Anda telah dikunci dan diproteksi. Logo tidak akan berganti atau ter-reset saat login.'
+      );
     }, 400);
   };
 
-  // Reset to initial default logo
+  // Kembalikan ke Logo Resmi Bawaan SDN Lanto
   const handleResetToDefault = () => {
-    setLogoUtama(DEFAULT_LOGO_SEKOLAH);
+    setPreviewLogo(DEFAULT_LOGO_SEKOLAH);
+    setHasNewSelection(true);
+
     try {
-      localStorage.removeItem('school_logo_custom');
-    } catch (e) {
-      console.warn('Gagal menghapus custom logo dari localStorage', e);
-    }
+      localStorage.setItem('school_logo_custom', DEFAULT_LOGO_SEKOLAH);
+      localStorage.setItem('school_logo_locked', 'true');
+    } catch (e) {}
+
     updateProfilSekolah({
       logoUrl: DEFAULT_LOGO_SEKOLAH
     });
-    showToast('info', 'Logo Direset', 'Logo sekolah telah dikembalikan ke logo resmi standar.');
+
+    showToast(
+      'info',
+      'Kembali ke Logo Resmi Bawaan',
+      'Logo telah disetel ulang ke lambang resmi bawaan SDN Lanto Dg. Pasewang dan dikunci.'
+    );
+    setHasNewSelection(false);
+  };
+
+  // Hapus Logo Kustom yang Diunggah
+  const handleDeleteCustomLogo = () => {
+    try {
+      localStorage.removeItem('school_logo_custom');
+      localStorage.removeItem('school_logo_locked');
+    } catch (e) {}
+
+    setPreviewLogo(DEFAULT_LOGO_SEKOLAH);
+    setHasNewSelection(false);
+
+    updateProfilSekolah({
+      logoUrl: DEFAULT_LOGO_SEKOLAH
+    });
+
+    showToast(
+      'info',
+      'Logo Kustom Dihapus',
+      'Logo kustom yang diunggah telah berhasil dihapus. Sistem kembali menampilkan logo resmi sekolah.'
+    );
   };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Header Banner */}
-      <div className="p-6 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 pointer-events-none flex items-center justify-end pr-8">
-          <ImageIcon className="w-64 h-64 text-white" />
-        </div>
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/png, image/jpeg, image/jpg, image/svg+xml, image/webp"
+        className="hidden"
+        id="input-upload-logo-sekolah"
+      />
 
+      {/* Header Banner Penjelasan & Panduan */}
+      <div className="p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 rounded-3xl text-white shadow-xl relative overflow-hidden border border-slate-800">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-400/30">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <span>Asset Web & Identitas Visual Sekolah</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-400/30">
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
+              <span>PANDUAN UNGGAH & KUNCI LOGO SEKOLAH</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
-              Manajemen Logo Sekolah
+              Cara Unggah Logo Sekolah
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Unggah file logo resmi sekolah untuk ditampilkan secara otomatis pada Header Sidebar Navigasi, Top Bar Sistem, Halaman Profil Sekolah, dan Kartu Akses Login Guru.
+              Anda dapat mengunggah berkas logo sekolah Anda (format <strong>PNG, JPG, SVG, WebP</strong>). Setelah diunggah, klik tombol <strong>"Simpan & Kunci Logo"</strong> agar logo tersimpan permanen dan terkunci rapat sehingga tidak akan tertukar atau kembali ke logo lain saat login.
             </p>
           </div>
 
-          {/* Action Save Button */}
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              id="btn-reset-logo-defaults"
-              onClick={handleResetToDefault}
-              className="px-4 py-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold rounded-xl border border-slate-700 transition-colors cursor-pointer flex items-center gap-2"
-              title="Kembalikan ke logo standar bawaan"
+              id="btn-pilih-berkas-header"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-black rounded-xl shadow-lg shadow-blue-500/25 transition-all cursor-pointer flex items-center gap-2"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span>Reset Standar</span>
-            </button>
-
-            <button
-              type="button"
-              id="btn-save-logo-assets"
-              onClick={handleSaveLogo}
-              disabled={isSaving}
-              className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-500/30 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{isSaving ? 'Menyimpan...' : 'Simpan Logo Sekolah'}</span>
+              <Upload className="w-4 h-4" />
+              <span>Pilih Berkas Logo</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Upload Card */}
+      {/* Langkah-langkah Unggah Cepat */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-start gap-3">
+          <div className="w-7 h-7 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center font-black text-xs shrink-0">
+            1
+          </div>
+          <div>
+            <span className="font-bold text-slate-800 text-xs block">Pilih Berkas</span>
+            <p className="text-[11px] text-slate-500 mt-0.5">Klik tombol unggah atau drag & drop file logo dari komputer Anda.</p>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-start gap-3">
+          <div className="w-7 h-7 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center font-black text-xs shrink-0">
+            2
+          </div>
+          <div>
+            <span className="font-bold text-slate-800 text-xs block">Cek Pratinjau</span>
+            <p className="text-[11px] text-slate-500 mt-0.5">Periksa tampilan logo di kotak pratinjau sebelum mengunci perubahan.</p>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-start gap-3">
+          <div className="w-7 h-7 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center font-black text-xs shrink-0">
+            3
+          </div>
+          <div>
+            <span className="font-bold text-slate-800 text-xs block">Simpan & Kunci</span>
+            <p className="text-[11px] text-slate-500 mt-0.5">Sistem mengunci logo agar tidak berganti otomatis saat Anda login kembali.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Upload & Preview Card */}
       <div className="p-6 sm:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold">
-              <ImageIcon className="w-5 h-5 text-blue-600" />
+              <ImageIcon className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-slate-800">Logo Sekolah Utama</h4>
+              <h4 className="text-base font-bold text-slate-900">
+                Pengaturan & Berkas Logo Sekolah
+              </h4>
               <p className="text-xs text-slate-500">
-                Identitas visual utama sekolah pada aplikasi SIM LANTO
+                Unggah dan kelola logo sekolah resmi untuk seluruh sistem SIM LANTO
               </p>
             </div>
           </div>
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
-            LOGO AKTIF
-          </span>
-        </div>
 
-        {/* Upload Zone with Drag & Drop */}
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragActiveZone(true); }}
-          onDragLeave={(e) => { e.preventDefault(); setDragActiveZone(false); }}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragActiveZone(false);
-            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-              processImageFile(e.dataTransfer.files[0], setLogoUtama, 'Logo Sekolah Utama');
-            }
-          }}
-          className={`p-6 sm:p-8 rounded-3xl border-2 border-dashed transition-all flex flex-col sm:flex-row items-center gap-6 ${
-            dragActiveZone
-              ? 'border-blue-500 bg-blue-50/80 scale-[1.01]'
-              : 'border-slate-300 bg-slate-50/70 hover:bg-slate-50'
-          }`}
-        >
-          {/* Image Preview Box */}
-          <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl border-2 border-slate-200 bg-white p-3 shadow-md flex items-center justify-center shrink-0 relative overflow-hidden">
-            <img
-              src={logoUtama}
-              alt="Logo Sekolah Utama"
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
-              }}
-              className="w-full h-full object-contain"
-            />
-          </div>
-
-          {/* Upload Prompts & Action Buttons */}
-          <div className="space-y-4 flex-1 text-center sm:text-left">
-            <div>
-              <h5 className="text-sm font-bold text-slate-900">
-                Unggah Berkas Logo Sekolah
-              </h5>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                Tarik & letakkan file logo di sini, atau klik tombol di bawah untuk memilih file dari perangkat Anda. Disarankan format PNG atau SVG dengan latar belakang transparan (resolusi minimal 200x200 px, maks 3 MB).
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-              <button
-                type="button"
-                onClick={() => fileUtamaInputRef.current?.click()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
-              >
-                <Upload className="w-4 h-4" />
-                <span>Pilih Berkas Logo</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setLogoUtama(DEFAULT_LOGO_SEKOLAH);
-                  showToast('info', 'Logo Direset', 'Logo sekolah dikembalikan ke standar awal.');
-                }}
-                className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
-              >
-                <RotateCcw className="w-4 h-4 text-slate-500" />
-                <span>Gunakan Logo Standar</span>
-              </button>
-
-              <input
-                ref={fileUtamaInputRef}
-                type="file"
-                accept="image/*,.png,.jpg,.jpeg,.svg,.webp"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    processImageFile(e.target.files[0], setLogoUtama, 'Logo Sekolah Utama');
-                  }
-                }}
-              />
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              PROTEKSI LOGO AKTIF
+            </span>
           </div>
         </div>
 
-        {/* Informational Cards on Logo Usage */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
-              <Layout className="w-4 h-4 text-blue-600" />
-              <span>Lokasi Penempatan Logo</span>
+        {/* Dropzone & Preview Section */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          {/* Kolom Kiri: Pratinjau Logo Saat Ini */}
+          <div className="md:col-span-4 flex flex-col items-center justify-center p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-slate-200 text-center">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">
+              Pratinjau Logo Aktif
+            </span>
+            <div className="relative group mb-3">
+              <div className="w-36 h-36 rounded-2xl border-2 border-slate-200 bg-white p-3 shadow-md shadow-slate-200/50 flex items-center justify-center overflow-hidden">
+                <img
+                  src={previewLogo}
+                  alt="Logo Sekolah"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
+                  }}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] flex items-center gap-1 shadow-sm border-2 border-white">
+                <Lock className="w-3 h-3" />
+                <span>TERKUNCI</span>
+              </div>
             </div>
-            <ul className="text-[11px] text-slate-600 space-y-1.5 pl-1">
-              <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Header Sidebar Navigasi Utama</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Profil Resmi Sekolah & Dokumen SIM</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Kartu Akses Login Guru Berbasis NIP</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Halaman Login Sistem</span>
-              </li>
-            </ul>
+            <p className="text-xs font-black text-slate-800 line-clamp-1">
+              {profilSekolah.namaSekolah || 'SDN Lanto Dg. Pasewang'}
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              NPSN: {profilSekolah.npsn || '40307044'}
+            </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
-            <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Penyimpanan Aman & Permanen</span>
+          {/* Kolom Kanan: Area Drag and Drop & Tombol Unggah */}
+          <div className="md:col-span-8 space-y-4">
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`p-6 sm:p-8 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center flex flex-col items-center justify-center gap-3 ${
+                isDragging
+                  ? 'border-blue-500 bg-blue-50/80 scale-[1.01]'
+                  : 'border-slate-300 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/30'
+              }`}
+            >
+              <div className="w-12 h-12 rounded-2xl bg-blue-100/80 text-blue-700 flex items-center justify-center shadow-xs">
+                <Upload className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-slate-800">
+                  Tarik & Letakkan berkas gambar logo di sini, atau <span className="text-blue-600 underline">Klik untuk Memilih</span>
+                </p>
+                <p className="text-xs text-slate-500">
+                  Mendukung PNG transparan, JPG, SVG, WebP (Rekomendasi rasio 1:1, maks 5 MB)
+                </p>
+              </div>
             </div>
-            <p className="text-[11px] text-emerald-800 leading-relaxed">
-              Logo yang disimpan diproteksi dengan sinkronisasi ganda: tersimpan pada cache lokal browser serta otomatis dicadangkan ke database awan, sehingga logo tidak akan berubah atau ter-reset otomatis setiap kali Anda melakukan login.
+
+            {/* Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  id="btn-upload-file-pilih"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4 text-slate-600" />
+                  <span>Pilih Berkas Komputer</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="btn-hapus-logo-kustom"
+                  onClick={handleDeleteCustomLogo}
+                  className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 transition-colors cursor-pointer flex items-center gap-1.5"
+                  title="Hapus logo kustom yang diunggah dan bersihkan penyimpanan"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Hapus Logo Kustom</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="btn-reset-default-logo"
+                  onClick={handleResetToDefault}
+                  className="px-3.5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-800 text-xs font-semibold rounded-xl border border-slate-200 transition-colors cursor-pointer"
+                  title="Kembalikan ke lambang resmi bawaan SDN Lanto Dg. Pasewang"
+                >
+                  <span>Reset Bawaan</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                id="btn-simpan-kunci-logo"
+                onClick={handleSaveAndLock}
+                disabled={isSaving}
+                className={`px-5 py-2.5 text-xs font-black rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 ${
+                  hasNewSelection
+                    ? 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-emerald-600/20 ring-2 ring-emerald-400/50'
+                    : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-indigo-600/20'
+                } disabled:opacity-50`}
+              >
+                {isSaving ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Lock className="w-4 h-4" />
+                )}
+                <span>{isSaving ? 'Menyimpan & Mengunci...' : 'Simpan & Kunci Logo Sekolah'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Info Note: Anti-Reset Guarantee */}
+        <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-900 flex items-start gap-3">
+          <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-xs space-y-1">
+            <span className="font-bold block">Proteksi Kunci Logo (Anti-Reset saat Login)</span>
+            <p className="text-amber-800 leading-relaxed text-[11px]">
+              Ketika Anda menekan tombol <strong>"Simpan & Kunci Logo Sekolah"</strong>, logo baru akan disimpan di memori permanen dan terlindungi secara otomatis. Sistem telah dikunci sehingga akun guru, kepala sekolah, atau admin yang masuk kembali <strong>tidak akan mengubah atau me-reset logo</strong> ke logo lain.
             </p>
           </div>
         </div>
 
-        {/* Bottom Save Action reminder */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-100 text-xs">
-          <span className="text-slate-500">
-            Pastikan mengklik tombol <strong>Simpan Logo Sekolah</strong> setelah memilih berkas baru.
-          </span>
-          <button
-            type="button"
-            onClick={handleSaveLogo}
-            disabled={isSaving}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
-          </button>
+        {/* Lokasi Penerapan Logo */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+            <Layout className="w-4 h-4 text-indigo-600" />
+            <span>Logo yang Diunggah & Dikunci Akan Tampil Otomatis Pada:</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600">
+            <div className="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-200/70">
+              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Header Sidebar Navigasi Utama SIM LANTO</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-200/70">
+              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Halaman Profil Resmi Sekolah & Ringkasan Data</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-200/70">
+              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Kartu Akses Login Guru Berbasis NIP</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-200/70">
+              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Halaman Utama Login Portal SIM Sekolah</span>
+            </div>
+          </div>
         </div>
-
       </div>
     </div>
   );

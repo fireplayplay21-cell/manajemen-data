@@ -77,6 +77,7 @@ import {
   initialRiwayatPelatihanGuru,
   initialDatabaseSekolah
 } from '../data/initialData';
+import { LOCKED_OFFICIAL_LOGO, DEFAULT_LOGO_SEKOLAH } from '../data/brandingAssets';
 
 export interface ToastMessage {
   id: string;
@@ -358,11 +359,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [profilSekolah, setProfilSekolah] = useState<ProfilSekolah>(() => {
     const loaded = loadFromStorage('profilSekolah', initialProfilSekolah);
-    const customLogo = typeof window !== 'undefined' ? localStorage.getItem('school_logo_custom') : null;
-    if (customLogo) {
-      return { ...loaded, logoUrl: customLogo };
-    }
-    return loaded;
+    const savedCustomLogo = typeof window !== 'undefined' ? localStorage.getItem('school_logo_custom') : null;
+    const finalLogo = savedCustomLogo || loaded.logoUrl || DEFAULT_LOGO_SEKOLAH;
+    return { ...loaded, logoUrl: finalLogo };
   });
   const [databaseSekolahList, setDatabaseSekolahList] = useState<DatabaseSekolah[]>(() =>
     loadFromStorage('databaseSekolah', initialDatabaseSekolah)
@@ -425,7 +424,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (cloudData.profilSekolah) {
           setProfilSekolah(prev => {
             const savedCustomLogo = typeof window !== 'undefined' ? localStorage.getItem('school_logo_custom') : null;
-            const finalLogo = savedCustomLogo || cloudData.profilSekolah.logoUrl || prev.logoUrl || initialProfilSekolah.logoUrl;
+            const finalLogo = savedCustomLogo || cloudData.profilSekolah.logoUrl || prev.logoUrl || DEFAULT_LOGO_SEKOLAH;
             return {
               ...prev,
               ...cloudData.profilSekolah,
@@ -659,6 +658,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Success login
     setCurrentUser(foundUser);
     setIsAuthenticated(true);
+    // Kunci dan pertahankan logo sekolah saat login (mencegah logo berganti ke logo lain)
+    const savedCustomLogo = typeof window !== 'undefined' ? localStorage.getItem('school_logo_custom') : null;
+    if (savedCustomLogo) {
+      setProfilSekolah(prev => ({ ...prev, logoUrl: savedCustomLogo }));
+    }
 
     if (foundUser.role === 'guru') {
       setActiveTab('administrasi-guru');
@@ -826,17 +830,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateProfilSekolah = (data: Partial<ProfilSekolah>) => {
     setProfilSekolah(prev => {
-      const updated = { ...prev, ...data };
-      if (updated.logoUrl) {
-        try {
-          localStorage.setItem('school_logo_custom', updated.logoUrl);
-        } catch (e) {}
-      }
+      const targetLogo = data.logoUrl !== undefined ? data.logoUrl : (prev.logoUrl || DEFAULT_LOGO_SEKOLAH);
+      const updated = { ...prev, ...data, logoUrl: targetLogo };
+      try {
+        if (targetLogo) {
+          localStorage.setItem('school_logo_custom', targetLogo);
+          localStorage.setItem('school_logo_locked', 'true');
+        }
+      } catch (e) {}
       try {
         setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
           profilSekolah: updated
         }, { merge: true }).catch(() => {});
       } catch (e) {}
+      saveToStorage('profilSekolah', updated);
       return updated;
     });
     showToast('success', 'Profil Diperbarui', 'Data profil sekolah berhasil disimpan.');
@@ -861,6 +868,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }) + ' WITA';
 
     setProfilSekolah(prev => {
+      const currentLogo = prev.logoUrl || (typeof window !== 'undefined' ? localStorage.getItem('school_logo_custom') : null) || DEFAULT_LOGO_SEKOLAH;
       const updated: ProfilSekolah = {
         ...prev,
         namaSekolah: target.namaSekolah,
@@ -876,7 +884,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         email: target.kontakEmail,
         website: target.website,
         alamat: target.alamatSekolah,
-        akreditasi: target.akreditasi
+        akreditasi: target.akreditasi,
+        logoUrl: currentLogo
       };
 
       saveToStorage('profilSekolah', updated);
@@ -1719,7 +1728,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetAllData = () => {
     localStorage.clear();
-    setProfilSekolah(initialProfilSekolah);
+    setProfilSekolah({ ...initialProfilSekolah, logoUrl: LOCKED_OFFICIAL_LOGO });
+    try {
+      localStorage.setItem('school_logo_custom', LOCKED_OFFICIAL_LOGO);
+      localStorage.setItem('school_logo_locked', 'true');
+    } catch (e) {}
     setUsers(initialUsers);
     setCurrentUser(initialUsers[0]);
     setPerencanaanList(initialPerencanaan);

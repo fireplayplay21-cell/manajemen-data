@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { ProfilSekolah } from '../../../types';
 import { Modal } from '../../common/Modal';
+import { DEFAULT_LOGO_SEKOLAH } from '../../../data/brandingAssets';
 import {
   Building2,
   MapPin,
@@ -21,7 +22,9 @@ import {
   Edit3,
   Database,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  Lock,
+  Upload
 } from 'lucide-react';
 
 const TAHUN_PELAJARAN_OPTIONS = [
@@ -99,16 +102,24 @@ export const ProfilSekolahView: React.FC = () => {
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white rounded-2xl border border-slate-200 shadow-xs">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-white border-2 border-slate-200 p-1.5 flex items-center justify-center shadow-md shadow-blue-500/10 shrink-0 overflow-hidden">
-            {profilSekolah.logoUrl ? (
+          <div className="relative shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-white border-2 border-slate-200 p-1.5 flex items-center justify-center shadow-md shadow-blue-500/10 overflow-hidden">
               <img
-                src={profilSekolah.logoUrl}
-                alt="Logo Sekolah"
+                src={profilSekolah.logoUrl || DEFAULT_LOGO_SEKOLAH}
+                alt="Logo Sekolah Resmi Terkunci"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = DEFAULT_LOGO_SEKOLAH;
+                }}
                 className="w-full h-full object-contain"
               />
-            ) : (
-              <Building2 className="w-8 h-8 text-blue-600" />
-            )}
+            </div>
+            <span
+              title="Logo Resmi Terkunci & Dilindungi"
+              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center border-2 border-white shadow-xs"
+            >
+              <Lock className="w-2.5 h-2.5" />
+            </span>
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-1.5 mb-1">
@@ -140,11 +151,11 @@ export const ProfilSekolahView: React.FC = () => {
                 type="button"
                 id="btn-nav-to-logo-branding"
                 onClick={() => setActiveTab('pengaturan')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition-colors shrink-0 cursor-pointer shadow-xs"
-                title="Buka Pengaturan Logo & Branding Sekolah"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 transition-colors shrink-0 cursor-pointer shadow-xs"
+                title="Buka Pengaturan untuk Unggah & Kunci Logo Sekolah"
               >
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                <span>Atur Logo & Branding</span>
+                <Upload className="w-4 h-4 text-blue-600" />
+                <span>Unggah / Kunci Logo</span>
               </button>
             )}
 
