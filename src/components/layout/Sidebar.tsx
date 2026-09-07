@@ -54,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
     rencanaPerbaikanList,
     administrasiGuruList,
     profilSekolah,
+    databaseSekolahList,
     isSidebarCollapsed,
     toggleSidebarCollapse
   } = useApp();
@@ -381,9 +382,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
                   <div className="w-full h-px bg-slate-800 my-1" />
                 )}
                 
-                {renderNavButton('menu-data-ptk', 'data-ptk', '1. PTK (Pendidik & Tendik)', Users, ptkList.length, undefined, 'emerald')}
-                {renderNavButton('menu-data-siswa', 'data-siswa', '2. Data Siswa', GraduationCap, siswaList.length, undefined, 'blue')}
-                {renderNavButton('menu-data-kelas', 'data-kelas', '3. Data Kelas (Rombel)', School, kelasList.length, undefined, 'amber')}
+                {renderNavButton('menu-database-sekolah', 'database-sekolah', '1. Database Sekolah', Database, databaseSekolahList?.length || 0, 'MASTER', 'emerald')}
+                {renderNavButton('menu-data-ptk', 'data-ptk', '2. PTK (Pendidik & Tendik)', Users, ptkList.length, undefined, 'emerald')}
+                {renderNavButton('menu-data-siswa', 'data-siswa', '3. Data Siswa', GraduationCap, siswaList.length, undefined, 'blue')}
+                {renderNavButton('menu-data-kelas', 'data-kelas', '4. Data Kelas (Rombel)', School, kelasList.length, undefined, 'amber')}
               </div>
 
               {/* Section: Manajemen Sekolah */}

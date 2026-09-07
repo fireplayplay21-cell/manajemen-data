@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { onAuthStateChanged, User, GoogleAuthProvider } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db, auth, googleProvider, signInWithPopup, signOut, handleFirestoreError, OperationType } from '../services/firebase';
@@ -37,7 +37,8 @@ import {
   DokumenAdministrasiGuru,
   RiwayatPelatihanGuru,
   KelasRecord,
-  ActiveTab
+  ActiveTab,
+  DatabaseSekolah
 } from '../types';
 
 export type { ActiveTab };
@@ -73,7 +74,8 @@ import {
   initialKeputusanSK,
   initialRencanaPerbaikan,
   initialAdministrasiGuru,
-  initialRiwayatPelatihanGuru
+  initialRiwayatPelatihanGuru,
+  initialDatabaseSekolah
 } from '../data/initialData';
 
 export interface ToastMessage {
@@ -279,6 +281,15 @@ interface AppContextType {
   updateRencanaPerbaikan: (id: string, item: Partial<RencanaPerbaikan>) => void;
   deleteRencanaPerbaikan: (id: string) => void;
 
+  // Manajemen Database Sekolah
+  databaseSekolahList: DatabaseSekolah[];
+  activeDatabaseSekolah?: DatabaseSekolah;
+  addDatabaseSekolah: (data: Omit<DatabaseSekolah, 'id'>, autoSyncToProfil?: boolean) => void;
+  updateDatabaseSekolah: (id: string, data: Partial<DatabaseSekolah>, autoSyncToProfil?: boolean) => void;
+  deleteDatabaseSekolah: (id: string) => void;
+  setAktifDatabaseSekolah: (id: string) => void;
+  sinkronkanKeProfilSekolah: (databaseSekolahId?: string) => void;
+
   // Firebase & Cloud Sync
   firebaseUser: User | null;
   isFirebaseConnected: boolean;
@@ -345,7 +356,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return validPool[0] || initialUsers[0];
   });
 
-  const [profilSekolah, setProfilSekolah] = useState<ProfilSekolah>(() => loadFromStorage('profilSekolah', initialProfilSekolah));
+  const [profilSekolah, setProfilSekolah] = useState<ProfilSekolah>(() => {
+    const loaded = loadFromStorage('profilSekolah', initialProfilSekolah);
+    const customLogo = typeof window !== 'undefined' ? localStorage.getItem('school_logo_custom') : null;
+    if (customLogo) {
+      return { ...loaded, logoUrl: customLogo };
+    }
+    return loaded;
+  });
+  const [databaseSekolahList, setDatabaseSekolahList] = useState<DatabaseSekolah[]>(() =>
+    loadFromStorage('databaseSekolah', initialDatabaseSekolah)
+  );
   const [perencanaanList, setPerencanaanList] = useState<DokumenPerencanaan[]>(() => loadFromStorage('perencanaan', initialPerencanaan));
   const [pbdList, setPbdList] = useState<IndikatorRaporPendidikan[]>(() => loadFromStorage('pbd', initialPBD));
   const [programUnggulanList, setProgramUnggulanList] = useState<ProgramUnggulan[]>(() => loadFromStorage('programUnggulan', initialProgramUnggulan));
@@ -401,7 +422,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsub = onSnapshot(doc(db, 'school_data', 'sdn_lanto_master'), (snap) => {
       if (snap.exists()) {
         const cloudData = snap.data();
-        if (cloudData.profilSekolah) setProfilSekolah(cloudData.profilSekolah);
+        if (cloudData.profilSekolah) {
+          setProfilSekolah(prev => {
+            const savedCustomLogo = typeof window !== 'undefined' ? localStorage.getItem('school_logo_custom') : null;
+            const finalLogo = savedCustomLogo || cloudData.profilSekolah.logoUrl || prev.logoUrl || initialProfilSekolah.logoUrl;
+            return {
+              ...prev,
+              ...cloudData.profilSekolah,
+              logoUrl: finalLogo
+            };
+          });
+        }
+        if (Array.isArray(cloudData.databaseSekolahList)) setDatabaseSekolahList(cloudData.databaseSekolahList);
         if (Array.isArray(cloudData.perencanaanList)) setPerencanaanList(cloudData.perencanaanList);
         if (Array.isArray(cloudData.pbdList)) setPbdList(cloudData.pbdList);
         if (Array.isArray(cloudData.programUnggulanList)) setProgramUnggulanList(cloudData.programUnggulanList);
@@ -544,6 +576,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => saveToStorage('isSidebarCollapsed', isSidebarCollapsed), [isSidebarCollapsed]);
   useEffect(() => saveToStorage('administrasiGuru', administrasiGuruList), [administrasiGuruList]);
   useEffect(() => saveToStorage('riwayatPelatihan', riwayatPelatihanList), [riwayatPelatihanList]);
+  useEffect(() => saveToStorage('databaseSekolah', databaseSekolahList), [databaseSekolahList]);
 
   const showToast = (type: ToastMessage['type'], title: string, message: string) => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -787,9 +820,189 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const activeDatabaseSekolah = useMemo(() => {
+    return databaseSekolahList.find(d => d.isAktif) || databaseSekolahList[0];
+  }, [databaseSekolahList]);
+
   const updateProfilSekolah = (data: Partial<ProfilSekolah>) => {
-    setProfilSekolah(prev => ({ ...prev, ...data }));
+    setProfilSekolah(prev => {
+      const updated = { ...prev, ...data };
+      if (updated.logoUrl) {
+        try {
+          localStorage.setItem('school_logo_custom', updated.logoUrl);
+        } catch (e) {}
+      }
+      try {
+        setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+          profilSekolah: updated
+        }, { merge: true }).catch(() => {});
+      } catch (e) {}
+      return updated;
+    });
     showToast('success', 'Profil Diperbarui', 'Data profil sekolah berhasil disimpan.');
+  };
+
+  const sinkronkanKeProfilSekolah = (databaseSekolahId?: string) => {
+    const target = databaseSekolahId
+      ? databaseSekolahList.find(d => d.id === databaseSekolahId)
+      : (databaseSekolahList.find(d => d.isAktif) || databaseSekolahList[0]);
+
+    if (!target) {
+      showToast('error', 'Gagal Mengambil Data', 'Data Database Sekolah tidak ditemukan.');
+      return;
+    }
+
+    const nowStr = new Date().toLocaleString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) + ' WITA';
+
+    setProfilSekolah(prev => {
+      const updated: ProfilSekolah = {
+        ...prev,
+        namaSekolah: target.namaSekolah,
+        tahunPelajaran: target.tahunPelajaran,
+        semester: target.semesterAktif,
+        npsn: target.npsn,
+        statusSekolah: target.statusSekolah,
+        bentukPendidikan: target.bentukPendidikan,
+        kurikulum: target.kurikulum,
+        kepalaSekolah: target.namaKepalaSekolah,
+        nipKepalaSekolah: target.nipKepalaSekolah,
+        telepon: target.kontakTelepon,
+        email: target.kontakEmail,
+        website: target.website,
+        alamat: target.alamatSekolah,
+        akreditasi: target.akreditasi
+      };
+
+      saveToStorage('profilSekolah', updated);
+      try {
+        setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+          profilSekolah: updated
+        }, { merge: true }).catch(() => {});
+      } catch (e) {}
+      return updated;
+    });
+
+    // Mark target as active and record sync time
+    setDatabaseSekolahList(prev =>
+      prev.map(item =>
+        item.id === target.id
+          ? { ...item, terakhirDisinkronkan: nowStr, isAktif: true }
+          : { ...item, isAktif: false }
+      )
+    );
+
+    showToast(
+      'success',
+      'Data Berhasil Diambil ke Profil',
+      `Profil sekolah telah disinkronkan dengan Database Sekolah "${target.namaSekolah}" (TP ${target.tahunPelajaran} • ${target.semesterAktif}).`
+    );
+  };
+
+  const addDatabaseSekolah = (data: Omit<DatabaseSekolah, 'id'>, autoSyncToProfil: boolean = false) => {
+    const newId = `DBS-${Date.now().toString().slice(-4)}`;
+    const nowStr = new Date().toLocaleString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) + ' WITA';
+
+    const newItem: DatabaseSekolah = {
+      ...data,
+      id: newId,
+      terakhirDisinkronkan: autoSyncToProfil ? nowStr : undefined,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    setDatabaseSekolahList(prev => {
+      if (newItem.isAktif) {
+        return [newItem, ...prev.map(p => ({ ...p, isAktif: false }))];
+      }
+      return [newItem, ...prev];
+    });
+
+    if (autoSyncToProfil || newItem.isAktif) {
+      setProfilSekolah(prev => {
+        const updated: ProfilSekolah = {
+          ...prev,
+          namaSekolah: newItem.namaSekolah,
+          tahunPelajaran: newItem.tahunPelajaran,
+          semester: newItem.semesterAktif,
+          npsn: newItem.npsn,
+          statusSekolah: newItem.statusSekolah,
+          bentukPendidikan: newItem.bentukPendidikan,
+          kurikulum: newItem.kurikulum,
+          kepalaSekolah: newItem.namaKepalaSekolah,
+          nipKepalaSekolah: newItem.nipKepalaSekolah,
+          telepon: newItem.kontakTelepon,
+          email: newItem.kontakEmail,
+          website: newItem.website,
+          alamat: newItem.alamatSekolah,
+          akreditasi: newItem.akreditasi
+        };
+        saveToStorage('profilSekolah', updated);
+        try {
+          setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+            profilSekolah: updated
+          }, { merge: true }).catch(() => {});
+        } catch (e) {}
+        return updated;
+      });
+    }
+
+    showToast('success', 'Database Sekolah Ditambahkan', `Master data "${newItem.namaSekolah}" (TP ${newItem.tahunPelajaran}) berhasil dibuat.`);
+  };
+
+  const updateDatabaseSekolah = (id: string, data: Partial<DatabaseSekolah>, autoSyncToProfil: boolean = false) => {
+    setDatabaseSekolahList(prev =>
+      prev.map(item => {
+        if (item.id === id) {
+          return { ...item, ...data, updatedAt: new Date().toISOString().split('T')[0] };
+        }
+        if (data.isAktif) {
+          return { ...item, isAktif: false };
+        }
+        return item;
+      })
+    );
+
+    if (autoSyncToProfil) {
+      sinkronkanKeProfilSekolah(id);
+    } else {
+      showToast('success', 'Database Diperbarui', 'Perubahan database sekolah berhasil disimpan.');
+    }
+  };
+
+  const deleteDatabaseSekolah = (id: string) => {
+    setDatabaseSekolahList(prev => {
+      if (prev.length <= 1) {
+        showToast('warning', 'Tidak Bisa Dihapus', 'Minimal harus terdapat 1 data master Database Sekolah.');
+        return prev;
+      }
+      const filtered = prev.filter(item => item.id !== id);
+      if (!filtered.some(f => f.isAktif) && filtered.length > 0) {
+        filtered[0] = { ...filtered[0], isAktif: true };
+      }
+      showToast('info', 'Database Dihapus', 'Data database sekolah berhasil dihapus.');
+      return filtered;
+    });
+  };
+
+  const setAktifDatabaseSekolah = (id: string) => {
+    setDatabaseSekolahList(prev =>
+      prev.map(item => ({
+        ...item,
+        isAktif: item.id === id
+      }))
+    );
+    showToast('info', 'Database Aktif Diganti', 'Database sekolah aktif berhasil ditentukan. Klik "Sinkronkan ke Profil" untuk memperbarui profil.');
   };
 
   const addUser = (userData: Omit<UserAccount, 'id' | 'tanggalEnrol'>) => {
@@ -1538,6 +1751,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRencanaPerbaikanList(initialRencanaPerbaikan);
     setAdministrasiGuruList(initialAdministrasiGuru);
     setRiwayatPelatihanList(initialRiwayatPelatihanGuru);
+    setDatabaseSekolahList(initialDatabaseSekolah);
     showToast('info', 'Data Direset', 'Semua data telah dikembalikan ke standar awal UPTD SPF SDN Lanto Dg. Pasewang.');
   };
 
@@ -1562,6 +1776,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetUserPasswordToDefault,
         syncPTKToUserAccounts,
         profilSekolah,
+        databaseSekolahList: Array.isArray(databaseSekolahList) ? databaseSekolahList : initialDatabaseSekolah,
+        activeDatabaseSekolah,
+        addDatabaseSekolah,
+        updateDatabaseSekolah,
+        deleteDatabaseSekolah,
+        setAktifDatabaseSekolah,
+        sinkronkanKeProfilSekolah,
         perencanaanList: Array.isArray(perencanaanList) ? perencanaanList : initialPerencanaan,
         pbdList: Array.isArray(pbdList) ? pbdList : initialPBD,
         programUnggulanList: Array.isArray(programUnggulanList) ? programUnggulanList : initialProgramUnggulan,

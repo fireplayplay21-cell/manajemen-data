@@ -18,7 +18,10 @@ import {
   Calendar,
   CalendarDays,
   Sparkles,
-  Edit3
+  Edit3,
+  Database,
+  RefreshCw,
+  ArrowRight
 } from 'lucide-react';
 
 const TAHUN_PELAJARAN_OPTIONS = [
@@ -38,8 +41,18 @@ const SEMESTER_OPTIONS = [
 ];
 
 export const ProfilSekolahView: React.FC = () => {
-  const { profilSekolah, updateProfilSekolah, currentUser, setActiveTab } = useApp();
+  const {
+    profilSekolah,
+    updateProfilSekolah,
+    currentUser,
+    setActiveTab,
+    databaseSekolahList,
+    activeDatabaseSekolah,
+    sinkronkanKeProfilSekolah,
+    showToast
+  } = useApp();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSelectDatabaseModalOpen, setIsSelectDatabaseModalOpen] = useState(false);
   const [formData, setFormData] = useState<ProfilSekolah>(profilSekolah);
   const [isCustomTahun, setIsCustomTahun] = useState(false);
 
@@ -50,6 +63,29 @@ export const ProfilSekolahView: React.FC = () => {
     const isCustom = !TAHUN_PELAJARAN_OPTIONS.includes(profilSekolah.tahunPelajaran || '2024/2025');
     setIsCustomTahun(isCustom);
     setIsEditModalOpen(true);
+  };
+
+  const handleAutoFillFromDatabase = (targetDb?: any) => {
+    const target = targetDb || activeDatabaseSekolah || databaseSekolahList[0];
+    if (!target) return;
+    setFormData(prev => ({
+      ...prev,
+      namaSekolah: target.namaSekolah,
+      tahunPelajaran: target.tahunPelajaran,
+      semester: target.semesterAktif,
+      npsn: target.npsn,
+      statusSekolah: target.statusSekolah,
+      bentukPendidikan: target.bentukPendidikan,
+      kurikulum: target.kurikulum,
+      kepalaSekolah: target.namaKepalaSekolah,
+      nipKepalaSekolah: target.nipKepalaSekolah,
+      telepon: target.kontakTelepon,
+      email: target.kontakEmail,
+      website: target.website,
+      alamat: target.alamatSekolah,
+      akreditasi: target.akreditasi
+    }));
+    showToast('info', 'Data Diisi dari Database Sekolah', `Parameter profil berhasil diselaraskan dengan Database Sekolah "${target.namaSekolah}".`);
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -113,6 +149,17 @@ export const ProfilSekolahView: React.FC = () => {
             )}
 
             <button
+              id="btn-ambil-dari-database-sekolah"
+              type="button"
+              onClick={() => setIsSelectDatabaseModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer"
+              title="Ambil dan Sinkronkan Data dari Database Sekolah"
+            >
+              <Database className="w-4 h-4" />
+              <span>Ambil Data dari Database</span>
+            </button>
+
+            <button
               id="btn-edit-profil-sekolah"
               type="button"
               onClick={handleOpenEdit}
@@ -123,6 +170,45 @@ export const ProfilSekolahView: React.FC = () => {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Database Sekolah Synchronization & Connection Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl text-xs">
+        <div className="flex items-center gap-3 text-emerald-950">
+          <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Database className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-emerald-900">Database Sekolah Terhubung:</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-200/70 text-emerald-800 text-[10px] font-black">
+                {activeDatabaseSekolah?.tahunPelajaran ? `TP ${activeDatabaseSekolah.tahunPelajaran} • ${activeDatabaseSekolah.semesterAktif}` : 'Master Aktif'}
+              </span>
+            </div>
+            <p className="text-[11px] text-emerald-700 mt-0.5">
+              {activeDatabaseSekolah?.namaSekolah || profilSekolah.namaSekolah} • Pimpinan: <span className="font-bold">{activeDatabaseSekolah?.namaKepalaSekolah || profilSekolah.kepalaSekolah}</span> (NIP. {activeDatabaseSekolah?.nipKepalaSekolah || profilSekolah.nipKepalaSekolah})
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab('database-sekolah')}
+            className="px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-300 transition-colors cursor-pointer"
+          >
+            Kelola Master Database
+          </button>
+          <button
+            type="button"
+            onClick={() => sinkronkanKeProfilSekolah()}
+            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+            title="Tarik data master terbaru dari Database Sekolah ke profil ini"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Tarik & Sinkronkan</span>
+          </button>
+        </div>
       </div>
 
       {/* Grid Content */}
@@ -269,6 +355,27 @@ export const ProfilSekolahView: React.FC = () => {
       >
         <form onSubmit={handleSave} className="space-y-4 text-xs">
           
+          {/* Quick Sync from Database Sekolah Button */}
+          {databaseSekolahList.length > 0 && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div>
+                  <p className="font-bold text-emerald-950 text-xs">Tersedia Master Database Sekolah</p>
+                  <p className="text-[11px] text-emerald-700">Isi otomatis seluruh data identitas, pimpinan, dan kontak dari database pusat.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleAutoFillFromDatabase()}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] shrink-0 transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Isi Otomatis</span>
+              </button>
+            </div>
+          )}
+
           {/* Section: Tahun Pelajaran & Semester Aktif */}
           <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200/80 space-y-3">
             <div className="flex items-center justify-between">
@@ -509,6 +616,140 @@ export const ProfilSekolahView: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Select Database Sekolah Modal */}
+      <Modal
+        isOpen={isSelectDatabaseModalOpen}
+        onClose={() => setIsSelectDatabaseModalOpen(false)}
+        title="Ambil Data dari Database Sekolah"
+        subtitle="Pilih rekaman Master Database Sekolah untuk diterapkan langsung ke Profil Sekolah resmi"
+        maxWidth="3xl"
+      >
+        <div className="space-y-4">
+          <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
+            <p className="font-semibold mb-0.5">Sinkronisasi Instan ke Profil Sekolah</p>
+            Memilih salah satu data di bawah akan memperbarui 14 parameter pokok Profil Sekolah: nama sekolah, tahun pelajaran, semester, NPSN, status sekolah, bentuk pendidikan, kurikulum, nama kepala (terhubung database PTK), NIP, kontak telepon, email, website, alamat, dan akreditasi.
+          </div>
+
+          {databaseSekolahList.length === 0 ? (
+            <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-2xl">
+              <Database className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p className="text-xs text-slate-500">Belum ada data pada Database Sekolah.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSelectDatabaseModalOpen(false);
+                  setActiveTab('database-sekolah');
+                }}
+                className="mt-3 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Buat Data Baru di Database Sekolah
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {databaseSekolahList.map(item => {
+                const isSelected = item.id === activeDatabaseSekolah?.id;
+                return (
+                  <div
+                    key={item.id}
+                    className={`p-4 rounded-xl border transition-all ${
+                      isSelected
+                        ? 'border-emerald-500 bg-emerald-50/30 ring-1 ring-emerald-400/40'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-slate-900 text-sm">{item.namaSekolah}</h4>
+                          {item.isAktif && (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300">
+                              Database Aktif
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold border border-blue-200">
+                            TP {item.tahunPelajaran} • {item.semesterAktif}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">
+                          NPSN: {item.npsn} • Status: {item.statusSekolah} • Jenjang: {item.bentukPendidikan} • Akreditasi: {item.akreditasi}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleAutoFillFromDatabase(item);
+                            setIsSelectDatabaseModalOpen(false);
+                            setIsEditModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                          title="Isi form dan edit terlebih dahulu sebelum simpan"
+                        >
+                          Isi Form Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sinkronkanKeProfilSekolah(item.id);
+                            setIsSelectDatabaseModalOpen(false);
+                          }}
+                          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Terapkan ke Profil</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-[11px] text-slate-600 pt-2 border-t border-slate-100 bg-slate-50/50 p-2.5 rounded-lg">
+                      <div>
+                        <span className="text-slate-400 block">Kepala Sekolah:</span>
+                        <span className="font-bold text-slate-800">{item.namaKepalaSekolah}</span>
+                        <span className="text-[10px] text-slate-500 block">NIP. {item.nipKepalaSekolah}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Kurikulum & Alamat:</span>
+                        <span className="font-medium text-slate-700">{item.kurikulum}</span>
+                        <span className="truncate block text-slate-500">{item.alamatSekolah}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Kontak & Web:</span>
+                        <span>{item.kontakTelepon} • {item.kontakEmail}</span>
+                        <span className="truncate block text-blue-600">{item.website}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSelectDatabaseModalOpen(false);
+                setActiveTab('database-sekolah');
+              }}
+              className="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+            >
+              <span>Kelola dan tambah data di Master Database Sekolah</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSelectDatabaseModalOpen(false)}
+              className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium text-xs cursor-pointer"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

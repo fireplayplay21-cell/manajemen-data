@@ -14,6 +14,7 @@ import { ActiveTab } from './types';
 // Modules
 import { DashboardOverview } from './components/modules/dashboard/DashboardOverview';
 import { ProfilSekolahView } from './components/modules/profil/ProfilSekolahView';
+import { DatabaseSekolahView } from './components/modules/database-sekolah/DatabaseSekolahView';
 import { ManajemenDataView } from './components/modules/manajemen-data/ManajemenDataView';
 import { PerencanaanView } from './components/modules/manajemen-sekolah/PerencanaanView';
 import { PerencanaanBerbasisDataView } from './components/modules/manajemen-sekolah/PerencanaanBerbasisDataView';
@@ -88,6 +89,9 @@ const MainContent: React.FC = () => {
         return <DashboardOverview />;
       case 'profil-sekolah':
         return <ProfilSekolahView />;
+      case 'database-sekolah':
+      case 'manajemen-database-sekolah':
+        return <DatabaseSekolahView />;
       case 'manajemen-data':
       case 'data-ptk':
       case 'data-siswa':

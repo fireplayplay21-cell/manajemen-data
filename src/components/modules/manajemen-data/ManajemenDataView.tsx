@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { DatabaseSekolahView } from '../database-sekolah/DatabaseSekolahView';
 import { PTKSection } from './PTKSection';
 import { DataSiswaSection } from './DataSiswaSection';
 import { DataKelasSection } from './DataKelasSection';
@@ -18,6 +19,7 @@ export const ManajemenDataView: React.FC = () => {
   const {
     activeTab,
     setActiveTab,
+    databaseSekolahList,
     ptkList,
     siswaList,
     kelasList,
@@ -28,17 +30,21 @@ export const ManajemenDataView: React.FC = () => {
   } = useApp();
 
   // Determine initial subTab from activeTab
-  const getSubTabFromActiveTab = (): 'ptk' | 'siswa' | 'kelas' => {
+  const getSubTabFromActiveTab = (): 'database' | 'ptk' | 'siswa' | 'kelas' => {
+    if (activeTab === 'database-sekolah' || activeTab === 'manajemen-database-sekolah') return 'database';
     if (activeTab === 'data-siswa') return 'siswa';
     if (activeTab === 'data-kelas') return 'kelas';
-    return 'ptk';
+    if (activeTab === 'data-ptk') return 'ptk';
+    return 'database';
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'ptk' | 'siswa' | 'kelas'>(getSubTabFromActiveTab);
+  const [activeSubTab, setActiveSubTab] = useState<'database' | 'ptk' | 'siswa' | 'kelas'>(getSubTabFromActiveTab);
 
   // Sync state if global activeTab changes
   useEffect(() => {
-    if (activeTab === 'data-ptk') {
+    if (activeTab === 'database-sekolah' || activeTab === 'manajemen-database-sekolah') {
+      setActiveSubTab('database');
+    } else if (activeTab === 'data-ptk') {
       setActiveSubTab('ptk');
     } else if (activeTab === 'data-siswa') {
       setActiveSubTab('siswa');
@@ -47,8 +53,9 @@ export const ManajemenDataView: React.FC = () => {
     }
   }, [activeTab]);
 
-  const handleTabChange = (tab: 'ptk' | 'siswa' | 'kelas') => {
+  const handleTabChange = (tab: 'database' | 'ptk' | 'siswa' | 'kelas') => {
     setActiveSubTab(tab);
+    if (tab === 'database') setActiveTab('database-sekolah');
     if (tab === 'ptk') setActiveTab('data-ptk');
     if (tab === 'siswa') setActiveTab('data-siswa');
     if (tab === 'kelas') setActiveTab('data-kelas');
@@ -96,7 +103,17 @@ export const ManajemenDataView: React.FC = () => {
         </div>
 
         {/* Live Metrics Header Badges */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-5 pt-4 border-t border-white/10 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-5 pt-4 border-t border-white/10 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/20 border border-teal-400/20 flex items-center justify-center shrink-0">
+              <Database className="w-4 h-4 text-teal-300" />
+            </div>
+            <div>
+              <p className="text-slate-300 text-[11px]">Database Master</p>
+              <p className="font-bold text-white text-base leading-tight">{databaseSekolahList.length} Rekaman</p>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/20 flex items-center justify-center shrink-0">
               <Users className="w-4 h-4 text-emerald-300" />
@@ -132,6 +149,28 @@ export const ManajemenDataView: React.FC = () => {
       {/* Navigation Sub-Tabs */}
       <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-200/70 rounded-xl border border-slate-300/60 shadow-inner max-w-fit">
         <button
+          onClick={() => handleTabChange('database')}
+          id="tab-btn-database-sekolah"
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+            activeSubTab === 'database'
+              ? 'bg-white text-teal-800 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+          }`}
+        >
+          <Database className="w-4 h-4 text-teal-600" />
+          <span>1. Database Sekolah</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold ${
+              activeSubTab === 'database'
+                ? 'bg-teal-100 text-teal-800'
+                : 'bg-slate-300/80 text-slate-700'
+            }`}
+          >
+            {databaseSekolahList.length}
+          </span>
+        </button>
+
+        <button
           onClick={() => handleTabChange('ptk')}
           id="tab-btn-ptk"
           className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all ${
@@ -141,7 +180,7 @@ export const ManajemenDataView: React.FC = () => {
           }`}
         >
           <Users className="w-4 h-4 text-emerald-600" />
-          <span>PTK (Pendidik & Tendik)</span>
+          <span>2. PTK (Pendidik & Tendik)</span>
           <span
             className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold ${
               activeSubTab === 'ptk'
@@ -163,7 +202,7 @@ export const ManajemenDataView: React.FC = () => {
           }`}
         >
           <GraduationCap className="w-4 h-4 text-blue-600" />
-          <span>Data Siswa</span>
+          <span>3. Data Siswa</span>
           <span
             className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold ${
               activeSubTab === 'siswa'
@@ -185,7 +224,7 @@ export const ManajemenDataView: React.FC = () => {
           }`}
         >
           <School className="w-4 h-4 text-amber-600" />
-          <span>Data Kelas (Rombel)</span>
+          <span>4. Data Kelas (Rombel)</span>
           <span
             className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold ${
               activeSubTab === 'kelas'
@@ -199,6 +238,7 @@ export const ManajemenDataView: React.FC = () => {
       </div>
 
       {/* Main Content Sections */}
+      {activeSubTab === 'database' && <DatabaseSekolahView />}
       {activeSubTab === 'ptk' && <PTKSection />}
       {activeSubTab === 'siswa' && <DataSiswaSection />}
       {activeSubTab === 'kelas' && <DataKelasSection />}

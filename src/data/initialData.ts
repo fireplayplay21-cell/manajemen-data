@@ -31,7 +31,8 @@ import {
   KategoriAdministrasiGuru,
   RiwayatPelatihanGuru,
   ItemObservasi5Komponen,
-  FormulirSupervisiLengkap
+  FormulirSupervisiLengkap,
+  DatabaseSekolah
 } from '../types';
 import {
   DEFAULT_LOGO_SEKOLAH,
@@ -2413,6 +2414,55 @@ export const initialRiwayatPelatihanGuru: RiwayatPelatihanGuru[] = [
     tahunAjaran: '2023/2024',
     keterangan: 'Strategi identifikasi dan asesmen kemampuan awal anak berkebutuhan khusus di kelas reguler.',
     createdAt: '2024-04-22'
+  }
+];
+
+export const initialDatabaseSekolah: DatabaseSekolah[] = [
+  {
+    id: 'DBS-001',
+    namaSekolah: 'UPTD SPF SDN Lanto Dg. Pasewang',
+    tahunPelajaran: '2024/2025',
+    semesterAktif: 'Semester Ganjil',
+    npsn: '40307399',
+    statusSekolah: 'Negeri',
+    bentukPendidikan: 'Sekolah Dasar (SD)',
+    kurikulum: 'Kurikulum Merdeka',
+    ptkIdKepala: 'PTK-01',
+    namaKepalaSekolah: 'Dra. Hj. Rosdiana, M.Pd.',
+    nipKepalaSekolah: '19700412 199303 2 004',
+    kontakTelepon: '0411-872345',
+    kontakEmail: 'sdnlantodgpasewang@gmail.com',
+    website: 'https://sdnlantodgpasewang.sch.id',
+    alamatSekolah: 'Jl. Lanto Dg. Pasewang No. 12, Kel. Maricaya, Kec. Makassar, Kota Makassar, Sulawesi Selatan 90142',
+    akreditasi: 'A (Unggul)',
+    isAktif: true,
+    terakhirDisinkronkan: '2024-08-15 08:30 WITA',
+    keterangan: 'Database Induk Resmi Satuan Pendidikan Tahun Ajaran 2024/2025 - Fase Kurikulum Merdeka',
+    createdAt: '2024-07-01',
+    updatedAt: '2024-08-15'
+  },
+  {
+    id: 'DBS-002',
+    namaSekolah: 'UPTD SPF SDN Lanto Dg. Pasewang',
+    tahunPelajaran: '2023/2024',
+    semesterAktif: 'Semester Genap',
+    npsn: '40307399',
+    statusSekolah: 'Negeri',
+    bentukPendidikan: 'Sekolah Dasar (SD)',
+    kurikulum: 'Kurikulum Merdeka & K13 (Transisi)',
+    ptkIdKepala: 'PTK-01',
+    namaKepalaSekolah: 'Dra. Hj. Rosdiana, M.Pd.',
+    nipKepalaSekolah: '19700412 199303 2 004',
+    kontakTelepon: '0411-872345',
+    kontakEmail: 'sdnlantodgpasewang@gmail.com',
+    website: 'https://sdnlantodgpasewang.sch.id',
+    alamatSekolah: 'Jl. Lanto Dg. Pasewang No. 12, Kel. Maricaya, Kec. Makassar, Kota Makassar, Sulawesi Selatan 90142',
+    akreditasi: 'A (Unggul)',
+    isAktif: false,
+    terakhirDisinkronkan: '2024-01-10 09:15 WITA',
+    keterangan: 'Arsip Database Sekolah Tahun Ajaran 2023/2024 Semester Genap',
+    createdAt: '2023-07-01',
+    updatedAt: '2024-06-20'
   }
 ];
 

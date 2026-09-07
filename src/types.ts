@@ -8,6 +8,8 @@ export type ActiveTab =
   | 'data-ptk'
   | 'data-siswa'
   | 'data-kelas'
+  | 'database-sekolah'
+  | 'manajemen-database-sekolah'
   // Manajemen Sekolah
   | 'perencanaan'
   | 'pbd'
@@ -491,9 +493,18 @@ export interface AgendaRapat {
   status: 'Akan Datang' | 'Sedang Berlangsung' | 'Selesai' | 'Ditunda';
   urgensi: 'Biasa' | 'Penting' | 'Sangat Mendesak';
   agendaPembahasan: string[];
+  agendaPembahasanRingkas?: string;
   deskripsi: string;
   notulenHasil?: string;
   keputusanRapat?: string[];
+  tanggal?: string;
+  kehadiranStats?: {
+    totalUndangan: number;
+    hadir: number;
+    izin: number;
+    sakit: number;
+    tanpaKeterangan?: number;
+  };
   daftarHadirJumlah?: {
     totalUndangan: number;
     hadir: number;
@@ -505,6 +516,30 @@ export interface AgendaRapat {
   fileMateriUrl?: string;
   fileDokumentasiUrl?: string;
   dilihatSemuaPegawai: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DatabaseSekolah {
+  id: string;
+  namaSekolah: string;
+  tahunPelajaran: string;
+  semesterAktif: string;
+  npsn: string;
+  statusSekolah: 'Negeri' | 'Swasta' | string;
+  bentukPendidikan: string;
+  kurikulum: string;
+  ptkIdKepala?: string;
+  namaKepalaSekolah: string;
+  nipKepalaSekolah: string;
+  kontakTelepon: string;
+  kontakEmail: string;
+  website: string;
+  alamatSekolah: string;
+  akreditasi: string;
+  isAktif?: boolean;
+  terakhirDisinkronkan?: string;
+  keterangan?: string;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -499,11 +499,11 @@ export const PengaturanAdminView: React.FC = () => {
           }`}
         >
           <ImageIcon className="w-4 h-4 text-indigo-600" />
-          <span>Logo & Branding Sekolah</span>
+          <span>Logo Sekolah</span>
           <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase ${
             activeSubTab === 'logo' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-200 text-slate-600'
           }`}>
-            ASSET WEB
+            LOGO
           </span>
         </button>
 
