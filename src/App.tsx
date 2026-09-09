@@ -144,10 +144,10 @@ const MainContent: React.FC = () => {
       <Sidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
       <div className={`${isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-80'} flex flex-col flex-1 min-h-screen transition-all duration-300 ease-in-out`}>
         <Navbar onToggleMobileMenu={() => setIsMobileOpen(!isMobileOpen)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           {renderActiveView()}
         </main>
-        <footer className="py-4 px-6 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
+        <footer className="py-3 px-4 sm:py-4 sm:px-6 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
           <p>
             © {new Date().getFullYear()} UPTD SPF SDN Lanto Dg. Pasewang Kota Makassar. Sistem Informasi Manajemen Data Sekolah Terpadu.
           </p>

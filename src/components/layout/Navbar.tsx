@@ -42,26 +42,41 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
         return 'Dashboard & Ringkasan Manajemen Sekolah';
       case 'profil-sekolah':
         return 'Menu Profil Sekolah UPTD SPF SDN Lanto Dg. Pasewang';
+      case 'database-sekolah':
+      case 'manajemen-database-sekolah':
+        return 'Database Sekolah UPTD SPF SDN Lanto Dg. Pasewang';
+      case 'manajemen-data':
+      case 'data-ptk':
+      case 'data-siswa':
+      case 'data-kelas':
+        return 'Manajemen Data Sekolah (PTK, Siswa & Rombel)';
       case 'perencanaan':
+      case 'manajemen-perencanaan':
         return '1. Perencanaan (KSP, RKT/RKS, RKAS, Prog. KS, Kalender, Target)';
       case 'pbd':
+      case 'manajemen-pbd':
         return '2. Perencanaan Berbasis Data (PBD & Rapor Pendidikan)';
       case 'program-unggulan':
+      case 'manajemen-program-unggulan':
         return '3. Program Unggulan (Program Sekolah, Praktik Baik, Dokumentasi)';
       case 'ptk-surat':
+      case 'manajemen-ptk':
         return '4. Manajemen PTK (Surat Masuk & Keluar, MOU Kerjasama)';
       case 'administrasi-guru':
       case 'manajemen-administrasi-guru':
         return '5. Administrasi Guru (Perangkat Pembelajaran & Evaluasi)';
       case 'kesiswaan':
+      case 'manajemen-kesiswaan':
         return '1. Manajemen Kesiswaan (Data Murid, Prestasi, Karakter, Ekskul, Masalah)';
       case 'supervisi-akademik':
         return '1. Supervisi Akademik (Program, Jadwal, Observasi, Umpan Balik, Tindak Lanjut)';
       case 'supervisi-manajerial':
         return '2. Supervisi Manajerial (Instrumen, Pemantauan, Evaluasi, Tindak Lanjut)';
       case 'keuangan':
+      case 'manajemen-keuangan':
         return '1. Manajemen Keuangan (RKAS, Realisasi Kegiatan, Monitoring BOSP)';
       case 'sarpras':
+      case 'manajemen-sarpras':
         return '1. Manajemen Sarpras (Inventaris, Kondisi, Kebutuhan, Pemeliharaan, Peminjaman)';
       case 'administrasi-ks':
       case 'manajemen-kepala-sekolah':
@@ -77,16 +92,72 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
     }
   };
 
+  const getShortTitle = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return 'Dashboard';
+      case 'profil-sekolah':
+        return 'Profil Sekolah';
+      case 'database-sekolah':
+      case 'manajemen-database-sekolah':
+        return 'Database Sekolah';
+      case 'manajemen-data':
+      case 'data-ptk':
+      case 'data-siswa':
+      case 'data-kelas':
+        return 'Manajemen Data';
+      case 'perencanaan':
+      case 'manajemen-perencanaan':
+        return 'Perencanaan';
+      case 'pbd':
+      case 'manajemen-pbd':
+        return 'PBD & Rapor';
+      case 'program-unggulan':
+      case 'manajemen-program-unggulan':
+        return 'Prog. Unggulan';
+      case 'ptk-surat':
+      case 'manajemen-ptk':
+        return 'Manajemen PTK';
+      case 'administrasi-guru':
+      case 'manajemen-administrasi-guru':
+        return 'Admin. Guru';
+      case 'kesiswaan':
+      case 'manajemen-kesiswaan':
+        return 'Kesiswaan';
+      case 'supervisi-akademik':
+        return 'Supervisi Akademik';
+      case 'supervisi-manajerial':
+        return 'Supervisi Manajerial';
+      case 'keuangan':
+      case 'manajemen-keuangan':
+        return 'Keuangan BOSP';
+      case 'sarpras':
+      case 'manajemen-sarpras':
+        return 'Sarpras';
+      case 'administrasi-ks':
+      case 'manajemen-kepala-sekolah':
+        return 'Kepala Sekolah';
+      case 'pengaturan':
+      case 'pengaturan-admin':
+      case 'settings':
+      case 'enrol-pengguna':
+      case 'user-management':
+        return 'Pengaturan';
+      default:
+        return 'SIM SDN Lanto';
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center justify-between shrink-0 shadow-xs">
+    <header className="sticky top-0 z-30 h-14 sm:h-16 bg-white border-b border-slate-200 px-3 sm:px-8 flex items-center justify-between shrink-0 shadow-xs">
       {/* Left side: Hamburger (Mobile) / Fold Toggle (Desktop) & Title */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Mobile Hamburger */}
         <button
           id="btn-toggle-sidebar-mobile"
           type="button"
           onClick={onToggleMobileMenu}
-          className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg lg:hidden focus:outline-none cursor-pointer"
+          className="p-1.5 sm:p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg lg:hidden focus:outline-none cursor-pointer"
           aria-label="Buka Menu Sidebar"
         >
           <Menu className="w-5 h-5" />
@@ -109,14 +180,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
         </button>
 
         <div className="min-w-0">
-          <h1 className="text-base sm:text-lg font-semibold text-slate-800 truncate leading-snug">
-            {getPageTitle()}
+          <h1 className="text-sm sm:text-lg font-bold sm:font-semibold text-slate-800 truncate leading-snug">
+            <span className="sm:hidden">{getShortTitle()}</span>
+            <span className="hidden sm:inline">{getPageTitle()}</span>
           </h1>
         </div>
       </div>
 
       {/* Right side: Actions & User Switcher */}
-      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 text-xs font-medium text-slate-500">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 text-xs font-medium text-slate-500">
         
         <span className="hidden md:inline font-medium text-slate-500 text-xs">
           Tahun Ajaran {profilSekolah?.tahunPelajaran || '2024/2025'}
@@ -168,7 +240,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
             id="btn-user-switcher"
             type="button"
             onClick={() => setShowRoleMenu(!showRoleMenu)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 text-left transition-all cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 text-left transition-all cursor-pointer"
           >
             <div className="w-6 h-6 rounded bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
               {currentUser?.nama ? currentUser.nama.charAt(0) : 'U'}
@@ -185,7 +257,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
           </button>
 
           {showRoleMenu && (
-            <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
+            <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
               <div className="px-3 py-2 border-b border-slate-100">
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                   Beralih Akun (Role Switcher)

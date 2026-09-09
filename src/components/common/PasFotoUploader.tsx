@@ -363,20 +363,20 @@ export const PasFotoUploader: React.FC<PasFotoUploaderProps> = ({
         <div className="md:col-span-8 space-y-3">
           
           {/* Tab Navigation */}
-          <div className="flex items-center gap-1 p-1 bg-slate-200/80 rounded-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-slate-200/80 rounded-xl">
             <button
               type="button"
               onClick={() => {
                 setActiveTab('upload');
                 stopCamera();
               }}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'upload'
                   ? 'bg-white text-emerald-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Upload className="w-3.5 h-3.5" />
+              <Upload className="w-3.5 h-3.5 shrink-0" />
               <span>Upload Gambar</span>
             </button>
 
@@ -386,13 +386,13 @@ export const PasFotoUploader: React.FC<PasFotoUploaderProps> = ({
                 setActiveTab('preset');
                 stopCamera();
               }}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'preset'
                   ? 'bg-white text-emerald-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
               <span>Aset Galeri</span>
             </button>
 
@@ -402,13 +402,13 @@ export const PasFotoUploader: React.FC<PasFotoUploaderProps> = ({
                 setActiveTab('url');
                 stopCamera();
               }}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'url'
                   ? 'bg-white text-emerald-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <LinkIcon className="w-3.5 h-3.5" />
+              <LinkIcon className="w-3.5 h-3.5 shrink-0" />
               <span>Tautan / Drive</span>
             </button>
 
@@ -418,13 +418,13 @@ export const PasFotoUploader: React.FC<PasFotoUploaderProps> = ({
                 setActiveTab('camera');
                 startCamera();
               }}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'camera'
                   ? 'bg-white text-emerald-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Camera className="w-3.5 h-3.5" />
+              <Camera className="w-3.5 h-3.5 shrink-0" />
               <span>Kamera</span>
             </button>
           </div>

@@ -328,7 +328,8 @@ export const PTKSection: React.FC = () => {
 
       {/* PTK Table with Integrated 3x4 Pas Foto Column */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop / Tablet View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
               <tr>
@@ -520,6 +521,137 @@ export const PTKSection: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View: Kartu PTK Responsif HP */}
+        <div className="block md:hidden divide-y divide-slate-100">
+          {filteredPTK.length === 0 ? (
+            <div className="py-10 text-center text-slate-400 p-4">
+              <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+              <p className="text-xs">Tidak ada data PTK yang cocok.</p>
+            </div>
+          ) : (
+            filteredPTK.map((ptk) => (
+              <div key={`m-ptk-${ptk.id}`} className="p-3.5 space-y-2.5 hover:bg-slate-50/50 transition-colors">
+                <div className="flex items-start gap-3">
+                  {/* Pas Foto 3x4 */}
+                  <div className="relative shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleQuickPhotoEdit(ptk)}
+                      title="Klik untuk ganti pas foto ini"
+                      className="w-12 h-16 rounded-lg overflow-hidden border border-slate-300 shadow-xs bg-slate-100 transition-all cursor-pointer relative block"
+                    >
+                      {ptk.foto ? (
+                        <img
+                          src={ptk.foto}
+                          alt={ptk.nama}
+                          className="w-full h-full object-cover object-top"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src =
+                              'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-emerald-50 text-emerald-700 font-bold text-sm">
+                          <span>{ptk.nama.charAt(0)}</span>
+                          <span className="text-[9px] text-slate-400 font-normal">3x4</span>
+                        </div>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickPhotoEdit(ptk)}
+                      className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-xs"
+                      title="Ganti Pas Foto"
+                    >
+                      <Camera className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Info PTK */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-1">
+                      <button
+                        onClick={() => handleViewDetail(ptk)}
+                        className="font-bold text-slate-900 text-left text-xs leading-snug hover:text-emerald-600 line-clamp-1"
+                      >
+                        {ptk.nama}
+                      </button>
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          ptk.statusKepegawaian === 'PNS'
+                            ? 'bg-blue-100 text-blue-800'
+                            : ptk.statusKepegawaian === 'PPPK'
+                            ? 'bg-teal-100 text-teal-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {ptk.statusKepegawaian}
+                      </span>
+                    </div>
+
+                    <p className="text-xs font-semibold text-slate-700 mt-0.5">
+                      {ptk.jabatan} {ptk.tugasTambahan && ptk.tugasTambahan !== '-' ? `• ${ptk.tugasTambahan}` : ''}
+                    </p>
+
+                    <div className="text-[11px] text-slate-500 mt-1 space-y-0.5">
+                      <p>NIP: <span className="font-mono text-slate-700">{ptk.nip || '-'}</span></p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200/60">
+                          {ptk.pangkatGolongan}
+                        </span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                          ptk.sertifikasi === 'Sudah Sertifikasi'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {ptk.sertifikasi === 'Sudah Sertifikasi' ? 'Tersertifikasi' : 'Belum Sertifikasi'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Action Bar with finger-friendly buttons */}
+                <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => handleViewDetail(ptk)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>Detail</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickPhotoEdit(ptk)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Camera className="w-3 h-3" />
+                    <span>Foto</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditPTK(ptk)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Edit className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePTK(ptk.id, ptk.nama)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Hapus</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

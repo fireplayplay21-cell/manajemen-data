@@ -22,7 +22,8 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
-  ChevronRight
+  ChevronRight,
+  X
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -247,12 +248,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
         id="main-sidebar"
         className={`fixed top-0 left-0 bottom-0 z-40 ${
           isSidebarCollapsed ? 'lg:w-20' : 'lg:w-80'
-        } w-80 bg-[#0f172a] text-slate-300 flex flex-col border-r border-slate-700 transition-all duration-300 ease-in-out lg:translate-x-0 ${
+        } w-[85vw] max-w-xs sm:w-80 bg-[#0f172a] text-slate-300 flex flex-col border-r border-slate-700 transition-all duration-300 ease-in-out lg:translate-x-0 ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Sidebar Header with Geometric Branding & Collapse Toggle */}
-        <div className={`border-b border-slate-700 transition-all duration-300 ${isSidebarCollapsed ? 'p-3' : 'p-5 sm:p-6'}`}>
+        <div className={`border-b border-slate-700 transition-all duration-300 ${isSidebarCollapsed ? 'p-3' : 'p-4 sm:p-5'}`}>
           <div className="flex items-center justify-between gap-2">
             <div className={`flex items-center gap-3 min-w-0 ${isSidebarCollapsed ? 'w-full justify-center' : ''}`}>
               <div
@@ -284,6 +285,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
                 </div>
               )}
             </div>
+
+            {/* Close Button on Mobile */}
+            <button
+              id="sidebar-btn-close-mobile"
+              type="button"
+              onClick={() => setIsMobileOpen(false)}
+              className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0"
+              aria-label="Tutup Sidebar"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
             {/* Toggle Fold Button on Header (Desktop) */}
             {!isSidebarCollapsed && (

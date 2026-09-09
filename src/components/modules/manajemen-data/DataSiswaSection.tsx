@@ -23,7 +23,8 @@ import {
   Camera,
   Image as ImageIcon,
   Check,
-  Download
+  Download,
+  Eye
 } from 'lucide-react';
 
 export const DataSiswaSection: React.FC = () => {
@@ -295,9 +296,10 @@ export const DataSiswaSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Data Siswa Table */}
+      {/* Data Siswa Container (Table on Desktop, Cards on Mobile) */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop / Tablet View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
               <tr>
@@ -455,6 +457,136 @@ export const DataSiswaSection: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View: Kartu Siswa Responsif HP */}
+        <div className="block md:hidden divide-y divide-slate-100">
+          {filteredSiswa.length === 0 ? (
+            <div className="py-10 text-center text-slate-400 p-4">
+              <GraduationCap className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+              <p className="text-xs">Tidak ada data peserta didik yang cocok.</p>
+            </div>
+          ) : (
+            filteredSiswa.map((siswa) => (
+              <div key={`m-${siswa.id}`} className="p-3.5 space-y-2.5 hover:bg-slate-50/50 transition-colors">
+                <div className="flex items-start gap-3">
+                  {/* Pas Foto 3x4 */}
+                  <div className="relative shrink-0">
+                    {siswa.foto ? (
+                      <img
+                        src={siswa.foto}
+                        alt={siswa.nama}
+                        referrerPolicy="no-referrer"
+                        className="w-12 h-16 object-cover object-top rounded-lg border border-slate-300 shadow-xs cursor-pointer"
+                        onClick={() => setPhotoTargetSiswa(siswa)}
+                      />
+                    ) : (
+                      <div
+                        onClick={() => setPhotoTargetSiswa(siswa)}
+                        className={`w-12 h-16 rounded-lg flex flex-col items-center justify-center font-bold text-sm border cursor-pointer ${
+                          siswa.jenisKelamin === 'L'
+                            ? 'bg-blue-100 border-blue-200 text-blue-700'
+                            : 'bg-pink-100 border-pink-200 text-pink-700'
+                        }`}
+                      >
+                        <span>{siswa.nama.charAt(0)}</span>
+                        <span className="text-[9px] font-normal opacity-70">3x4</span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPhotoTargetSiswa(siswa)}
+                      className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-xs"
+                      title="Ganti Pas Foto Siswa"
+                    >
+                      <Camera className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Info Siswa */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-1">
+                      <button
+                        onClick={() => handleViewDetail(siswa)}
+                        className="font-bold text-slate-900 text-left text-xs leading-snug hover:text-emerald-600 line-clamp-1"
+                      >
+                        {siswa.nama}
+                      </button>
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          siswa.status === 'Aktif'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : siswa.status === 'Pindah'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {siswa.status}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                        {siswa.kelas}
+                      </span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                          siswa.jenisKelamin === 'L'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'bg-pink-50 text-pink-700'
+                        }`}
+                      >
+                        {siswa.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-slate-500 mt-1 space-y-0.5">
+                      <p>NISN: <span className="font-mono text-slate-700">{siswa.nisn || '-'}</span> | NIS: <span className="font-mono text-slate-700">{siswa.nis || '-'}</span></p>
+                      {siswa.namaOrtu && (
+                        <p className="truncate">Ortu: <span className="text-slate-700">{siswa.namaOrtu}</span></p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Action Bar with finger-friendly buttons */}
+                <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => handleViewDetail(siswa)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>Detail</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhotoTargetSiswa(siswa)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Camera className="w-3 h-3" />
+                    <span>Foto</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEdit(siswa)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Edit className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(siswa.id, siswa.nama)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Hapus</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

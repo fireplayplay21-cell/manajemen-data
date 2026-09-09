@@ -49,29 +49,30 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div
       id="modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
       <div
         id="modal-dialog"
-        className={`relative w-full ${maxWidthClasses[maxWidth]} my-8 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-150`}
+        className={`relative w-full ${maxWidthClasses[maxWidth]} my-auto sm:my-8 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[94vh]`}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-            {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 bg-slate-50/80 shrink-0">
+          <div className="min-w-0 pr-2">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 truncate">{title}</h3>
+            {subtitle && <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{subtitle}</p>}
           </div>
           <button
             id="btn-close-modal"
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            aria-label="Tutup Modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="px-6 py-5 max-h-[calc(85vh-100px)] overflow-y-auto">
+        <div className="px-4 sm:px-6 py-3 sm:py-5 max-h-[calc(94vh-80px)] overflow-y-auto">
           {children}
         </div>
       </div>
