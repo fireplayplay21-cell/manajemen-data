@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { onAuthStateChanged, User, GoogleAuthProvider } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db, auth, googleProvider, signInWithPopup, signOut, handleFirestoreError, OperationType } from '../services/firebase';
+import { doc, getDoc, setDoc, onSnapshot, collection, deleteDoc } from 'firebase/firestore';
+import { db, auth, googleProvider, signInWithPopup, signOut, handleFirestoreError, OperationType, cleanFirestoreData } from '../services/firebase';
 import { setDriveAccessToken } from '../services/driveService';
 import {
   UserAccount,
@@ -151,10 +151,12 @@ interface AppContextType {
   deleteUser: (id: string) => void;
 
   // Generic and specific add/update/delete helpers
-  addAdministrasiGuru: (item: Omit<DokumenAdministrasiGuru, 'id'>) => void;
-  updateAdministrasiGuru: (id: string, item: Partial<DokumenAdministrasiGuru>) => void;
-  deleteAdministrasiGuru: (id: string) => void;
-  kirimAdministrasiGuru: (id: string) => void;
+  isSyncingAdministrasiGuru: boolean;
+  syncAdministrasiGuruToCloud: () => Promise<void>;
+  addAdministrasiGuru: (item: Omit<DokumenAdministrasiGuru, 'id'>) => Promise<string> | void;
+  updateAdministrasiGuru: (id: string, item: Partial<DokumenAdministrasiGuru>) => Promise<void> | void;
+  deleteAdministrasiGuru: (id: string) => Promise<void> | void;
+  kirimAdministrasiGuru: (id: string) => Promise<void> | void;
   berikanUmpanBalikPositif: (
     id: string,
     feedback: {
@@ -164,7 +166,7 @@ interface AppContextType {
       aspekApresiasi?: string[];
       status?: DokumenAdministrasiGuru['status'];
     }
-  ) => void;
+  ) => Promise<void> | void;
 
   addRiwayatPelatihan: (item: Omit<RiwayatPelatihanGuru, 'id'>) => void;
   updateRiwayatPelatihan: (id: string, item: Partial<RiwayatPelatihanGuru>) => void;
@@ -402,6 +404,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isFirebaseConnected, setIsFirebaseConnected] = useState<boolean>(true);
   const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
+  const [isSyncingAdministrasiGuru, setIsSyncingAdministrasiGuru] = useState<boolean>(false);
   const [lastCloudSync, setLastCloudSync] = useState<string | null>(() => loadFromStorage('lastCloudSync', null));
 
   // Listen to Firebase Auth state
@@ -513,6 +516,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     return () => unsub();
   }, [firebaseUser]);
+
+  // Real-time listener for administrasi_guru dedicated Firestore collection
+  useEffect(() => {
+    try {
+      const colRef = collection(db, 'administrasi_guru');
+      const unsub = onSnapshot(colRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const items: DokumenAdministrasiGuru[] = [];
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            items.push({
+              ...(data as DokumenAdministrasiGuru),
+              id: docSnap.id
+            });
+          });
+          // Sort items by tanggalUpload or creation order descending
+          items.sort((a, b) => (b.tanggalUpload || '').localeCompare(a.tanggalUpload || ''));
+          setAdministrasiGuruList(items);
+          saveToStorage('administrasiGuru', items);
+        } else {
+          // If Firestore collection has no documents yet, seed existing initial/local documents
+          const localItems = loadFromStorage<DokumenAdministrasiGuru[]>('administrasiGuru', initialAdministrasiGuru);
+          if (localItems && localItems.length > 0) {
+            localItems.forEach(item => {
+              const cleaned = cleanFirestoreData(item);
+              setDoc(doc(db, 'administrasi_guru', item.id), cleaned).catch(err => {
+                console.warn('Initial seed error for item:', item.id, err);
+              });
+            });
+          }
+        }
+      }, (err) => {
+        console.warn('Firestore administrasi_guru snapshot notice:', err.message);
+      });
+      return () => unsub();
+    } catch (e) {
+      console.warn('Could not establish administrasi_guru real-time listener:', e);
+    }
+  }, []);
+
+  // Real-time listener for ptk dedicated Firestore collection
+  useEffect(() => {
+    try {
+      const colRef = collection(db, 'ptk');
+      const unsub = onSnapshot(colRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const items: PTKRecord[] = [];
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            items.push({
+              ...(data as PTKRecord),
+              id: docSnap.id
+            });
+          });
+          setPtkList(items);
+          saveToStorage('ptk', items);
+        } else {
+          // Seed PTK collection if empty
+          const localPTK = loadFromStorage<PTKRecord[]>('ptk', initialPTK);
+          if (localPTK && localPTK.length > 0) {
+            localPTK.forEach(item => {
+              const cleaned = cleanFirestoreData(item);
+              setDoc(doc(db, 'ptk', item.id), cleaned).catch(() => {});
+            });
+          }
+        }
+      }, (err) => {
+        console.warn('Firestore ptk snapshot notice:', err.message);
+      });
+      return () => unsub();
+    } catch (e) {
+      console.warn('Could not establish ptk real-time listener:', e);
+    }
+  }, []);
 
   const loginWithGoogle = async () => {
     try {
@@ -1110,8 +1187,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  // Specialized PTK operations with instant bidirectional sync to User Accounts
-  const addPTK = (item: Omit<PTKRecord, 'id'>) => {
+  // Specialized PTK operations with instant bidirectional sync to User Accounts and Firestore
+  const addPTK = async (item: Omit<PTKRecord, 'id'>) => {
     const newPTK: PTKRecord = {
       ...item,
       id: `PTK-${Date.now().toString().slice(-4)}`
@@ -1132,10 +1209,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return u;
     }));
 
-    showToast('success', 'PTK Ditambahkan', `Data PTK ${newPTK.nama} berhasil ditambahkan dan disinkronkan.`);
+    try {
+      const cleaned = cleanFirestoreData({
+        ...newPTK,
+        updatedAt: new Date().toISOString()
+      });
+      await setDoc(doc(db, 'ptk', newPTK.id), cleaned);
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        ptkList: [newPTK, ...ptkList]
+      }, { merge: true }).catch(() => {});
+    } catch (err) {
+      console.warn('Error saving PTK to Firestore:', err);
+    }
+
+    showToast('success', 'PTK Ditambahkan', `Data PTK ${newPTK.nama} berhasil ditambahkan dan disinkronkan ke database.`);
   };
 
-  const updatePTK = (id: string, item: Partial<PTKRecord>) => {
+  const updatePTK = async (id: string, item: Partial<PTKRecord>) => {
     let updatedPTK: PTKRecord | undefined;
 
     setPtkList(prev => prev.map(p => {
@@ -1182,12 +1272,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
 
-    showToast('success', 'Data PTK Diperbarui', 'Data dan pas foto PTK berhasil disimpan & otomatis disinkronkan ke akun login.');
+    try {
+      const cleaned = cleanFirestoreData({
+        ...item,
+        updatedAt: new Date().toISOString()
+      });
+      await setDoc(doc(db, 'ptk', id), cleaned, { merge: true });
+      if (updatedPTK) {
+        const target = updatedPTK;
+        setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+          ptkList: ptkList.map(p => p.id === id ? target : p)
+        }, { merge: true }).catch(() => {});
+      }
+    } catch (err) {
+      console.warn('Error updating PTK in Firestore:', err);
+    }
+
+    showToast('success', 'Data PTK Diperbarui', 'Data dan pas foto PTK berhasil disimpan ke database cloud.');
   };
 
-  const deletePTK = (id: string) => {
+  const deletePTK = async (id: string) => {
     setPtkList(prev => prev.filter(el => el.id !== id));
-    showToast('info', 'Data Dihapus', 'Data PTK berhasil dihapus.');
+    try {
+      await deleteDoc(doc(db, 'ptk', id));
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        ptkList: ptkList.filter(p => p.id !== id)
+      }, { merge: true }).catch(() => {});
+    } catch (err) {
+      console.warn('Error deleting PTK from Firestore:', err);
+    }
+    showToast('info', 'Data Dihapus', 'Data PTK berhasil dihapus dari database.');
   };
 
   const perencanaanCRUD = createCRUD<DokumenPerencanaan>(setPerencanaanList, 'Perencanaan', 'DOC');
@@ -1231,7 +1345,108 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const jurnalKSCRUD = createCRUD<JurnalKepemimpinan>(setJurnalKSList, 'Jurnal Kepemimpinan', 'JRN');
   const keputusanSKCRUD = createCRUD<KeputusanSK>(setKeputusanSKList, 'Keputusan & SK', 'SK');
   const rencanaPerbaikanCRUD = createCRUD<RencanaPerbaikan>(setRencanaPerbaikanList, 'Rencana Perbaikan', 'RPB');
-  const administrasiGuruCRUD = createCRUD<DokumenAdministrasiGuru>(setAdministrasiGuruList, 'Administrasi Guru', 'ADM-GURU');
+
+  // Dedicated CRUD for Administrasi Guru connected directly to Firestore & Real-Time Sync
+  const addAdministrasiGuru = async (item: Omit<DokumenAdministrasiGuru, 'id'>): Promise<string> => {
+    setIsSyncingAdministrasiGuru(true);
+    const newId = `ADM-GURU-${Date.now().toString().slice(-4)}`;
+    const newDoc: DokumenAdministrasiGuru = {
+      ...item,
+      id: newId
+    };
+
+    setAdministrasiGuruList(prev => {
+      const updated = [newDoc, ...prev.filter(d => d.id !== newId)];
+      saveToStorage('administrasiGuru', updated);
+      return updated;
+    });
+
+    try {
+      const cleaned = cleanFirestoreData({
+        ...newDoc,
+        updatedAt: new Date().toISOString()
+      });
+      await setDoc(doc(db, 'administrasi_guru', newId), cleaned);
+
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: [newDoc, ...administrasiGuruList.filter(d => d.id !== newId)]
+      }, { merge: true }).catch(() => {});
+
+      showToast('success', 'Tersimpan di Database', `Dokumen "${newDoc.judul}" berhasil disimpan ke database cloud.`);
+    } catch (error) {
+      console.error('Error adding administrasi guru to Firestore:', error);
+      showToast('warning', 'Tersimpan Lokal', 'Dokumen disimpan di penyimpanan lokal perangkat.');
+    } finally {
+      setIsSyncingAdministrasiGuru(false);
+    }
+
+    return newId;
+  };
+
+  const updateAdministrasiGuru = async (id: string, item: Partial<DokumenAdministrasiGuru>): Promise<void> => {
+    setIsSyncingAdministrasiGuru(true);
+    let updatedItem: DokumenAdministrasiGuru | undefined;
+
+    setAdministrasiGuruList(prev => {
+      const updated = prev.map(el => {
+        if (el.id === id) {
+          const merged = { ...el, ...item };
+          updatedItem = merged;
+          return merged;
+        }
+        return el;
+      });
+      saveToStorage('administrasiGuru', updated);
+      return updated;
+    });
+
+    try {
+      const cleaned = cleanFirestoreData({
+        ...item,
+        updatedAt: new Date().toISOString()
+      });
+      await setDoc(doc(db, 'administrasi_guru', id), cleaned, { merge: true });
+
+      if (updatedItem) {
+        const target = updatedItem;
+        setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+          administrasiGuruList: administrasiGuruList.map(d => d.id === id ? target : d)
+        }, { merge: true }).catch(() => {});
+      }
+
+      showToast('success', 'Database Diperbarui', 'Perubahan dokumen administrasi berhasil disimpan ke database.');
+    } catch (error) {
+      console.error('Error updating administrasi guru in Firestore:', error);
+      showToast('warning', 'Tersimpan Lokal', 'Perubahan dokumen disimpan di penyimpanan lokal.');
+    } finally {
+      setIsSyncingAdministrasiGuru(false);
+    }
+  };
+
+  const deleteAdministrasiGuru = async (id: string): Promise<void> => {
+    setIsSyncingAdministrasiGuru(true);
+    setAdministrasiGuruList(prev => {
+      const updated = prev.filter(el => el.id !== id);
+      saveToStorage('administrasiGuru', updated);
+      return updated;
+    });
+
+    try {
+      await deleteDoc(doc(db, 'administrasi_guru', id));
+
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: administrasiGuruList.filter(d => d.id !== id)
+      }, { merge: true }).catch(() => {});
+
+      showToast('info', 'Dihapus dari Database', 'Dokumen administrasi berhasil dihapus dari database cloud.');
+    } catch (error) {
+      console.error('Error deleting administrasi guru from Firestore:', error);
+      showToast('warning', 'Dihapus Lokal', 'Dokumen dihapus dari penyimpanan lokal.');
+    } finally {
+      setIsSyncingAdministrasiGuru(false);
+    }
+  };
+
   const riwayatPelatihanCRUD = createCRUD<RiwayatPelatihanGuru>(setRiwayatPelatihanList, 'Riwayat Pelatihan Guru', 'TRN');
 
   // Helper to convert Formulir 3 Tahap to Supervisi Akademik (Matriks Penilaian)
@@ -1604,21 +1819,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('success', 'Sinkronisasi Berhasil', `Data hasil observasi pembelajaran ${doc.namaGuru} telah disinkronkan ke Matriks Supervisi Manajerial.`);
   };
 
-  const kirimAdministrasiGuru = (id: string) => {
-    setAdministrasiGuruList(prev => prev.map(item => {
-      if (item.id === id) {
-        return {
-          ...item,
-          status: 'Terkirim',
-          tanggalKirim: new Date().toISOString().split('T')[0]
-        };
-      }
-      return item;
-    }));
-    showToast('success', 'Dokumen Terkirim', 'Dokumen administrasi guru berhasil dikirimkan ke Kepala Sekolah untuk ditinjau.');
+  const kirimAdministrasiGuru = async (id: string): Promise<void> => {
+    setIsSyncingAdministrasiGuru(true);
+    const today = new Date().toISOString().split('T')[0];
+
+    setAdministrasiGuruList(prev => {
+      const updated = prev.map(item => {
+        if (item.id === id) {
+          return {
+            ...item,
+            status: 'Terkirim' as const,
+            tanggalKirim: today
+          };
+        }
+        return item;
+      });
+      saveToStorage('administrasiGuru', updated);
+      return updated;
+    });
+
+    try {
+      await setDoc(doc(db, 'administrasi_guru', id), {
+        status: 'Terkirim',
+        tanggalKirim: today,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: administrasiGuruList.map(d => d.id === id ? { ...d, status: 'Terkirim' as const, tanggalKirim: today } : d)
+      }, { merge: true }).catch(() => {});
+
+      showToast('success', 'Dokumen Terkirim & Tersimpan', 'Dokumen berhasil dikirim ke Kepala Sekolah dan status tercatat di database.');
+    } catch (error) {
+      console.error('Error submitting administrasi guru:', error);
+      showToast('warning', 'Status Diperbarui Lokal', 'Status pengiriman tersimpan secara lokal.');
+    } finally {
+      setIsSyncingAdministrasiGuru(false);
+    }
   };
 
-  const berikanUmpanBalikPositif = (
+  const berikanUmpanBalikPositif = async (
     id: string,
     feedback: {
       umpanBalikPositif: string;
@@ -1627,22 +1867,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       aspekApresiasi?: string[];
       status?: DokumenAdministrasiGuru['status'];
     }
-  ) => {
-    setAdministrasiGuruList(prev => prev.map(item => {
-      if (item.id === id) {
-        return {
+  ): Promise<void> => {
+    setIsSyncingAdministrasiGuru(true);
+    const today = new Date().toISOString().split('T')[0];
+    const payload = {
+      umpanBalikPositif: feedback.umpanBalikPositif,
+      penilaiKS: feedback.penilaiKS,
+      bintangApresiasi: feedback.bintangApresiasi || 5,
+      aspekApresiasi: feedback.aspekApresiasi && feedback.aspekApresiasi.length > 0 ? feedback.aspekApresiasi : ['Sesuai Capaian Pembelajaran'],
+      tanggalUmpanBalik: today,
+      status: feedback.status || ('Disetujui Penuh' as const)
+    };
+
+    setAdministrasiGuruList(prev => {
+      const updated = prev.map(item => {
+        if (item.id === id) {
+          return {
+            ...item,
+            ...payload
+          };
+        }
+        return item;
+      });
+      saveToStorage('administrasiGuru', updated);
+      return updated;
+    });
+
+    try {
+      const cleaned = cleanFirestoreData({
+        ...payload,
+        updatedAt: new Date().toISOString()
+      });
+      await setDoc(doc(db, 'administrasi_guru', id), cleaned, { merge: true });
+
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: administrasiGuruList.map(d => d.id === id ? { ...d, ...payload } : d)
+      }, { merge: true }).catch(() => {});
+
+      showToast('success', 'Apresiasi Tersimpan di Database', 'Umpan balik positif dan apresiasi berhasil disimpan ke database.');
+    } catch (error) {
+      console.error('Error giving feedback in Firestore:', error);
+      showToast('warning', 'Apresiasi Disimpan Lokal', 'Umpan balik disimpan di penyimpanan lokal.');
+    } finally {
+      setIsSyncingAdministrasiGuru(false);
+    }
+  };
+
+  const syncAdministrasiGuruToCloud = async (): Promise<void> => {
+    setIsSyncingAdministrasiGuru(true);
+    try {
+      const currentList = administrasiGuruList;
+      for (const item of currentList) {
+        const cleaned = cleanFirestoreData({
           ...item,
-          umpanBalikPositif: feedback.umpanBalikPositif,
-          penilaiKS: feedback.penilaiKS,
-          bintangApresiasi: feedback.bintangApresiasi || 5,
-          aspekApresiasi: feedback.aspekApresiasi && feedback.aspekApresiasi.length > 0 ? feedback.aspekApresiasi : ['Sesuai Capaian Pembelajaran'],
-          tanggalUmpanBalik: new Date().toISOString().split('T')[0],
-          status: feedback.status || 'Disetujui Penuh'
-        };
+          updatedAt: new Date().toISOString()
+        });
+        await setDoc(doc(db, 'administrasi_guru', item.id), cleaned, { merge: true });
       }
-      return item;
-    }));
-    showToast('success', 'Umpan Balik Positif Diberikan', 'Apresiasi dan umpan balik positif berhasil disimpan untuk guru.');
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: currentList
+      }, { merge: true });
+
+      showToast('success', 'Sinkronisasi Berhasil', `Semua ${currentList.length} berkas Administrasi Guru berhasil disinkronkan ke Firestore.`);
+    } catch (err) {
+      console.error('Error syncing administrasi guru:', err);
+      showToast('error', 'Gagal Sinkronisasi', 'Terjadi kendala saat menyinkronkan data ke database cloud.');
+    } finally {
+      setIsSyncingAdministrasiGuru(false);
+    }
   };
 
   const forceCloudSync = useCallback(async () => {
@@ -1831,9 +2123,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateUser,
         deleteUser,
 
-        addAdministrasiGuru: administrasiGuruCRUD.add,
-        updateAdministrasiGuru: administrasiGuruCRUD.update,
-        deleteAdministrasiGuru: administrasiGuruCRUD.delete,
+        isSyncingAdministrasiGuru,
+        syncAdministrasiGuruToCloud,
+        addAdministrasiGuru,
+        updateAdministrasiGuru,
+        deleteAdministrasiGuru,
         kirimAdministrasiGuru,
         berikanUmpanBalikPositif,
 

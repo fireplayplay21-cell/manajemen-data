@@ -36,6 +36,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /administrasi_guru/{docId} {
+      allow read, write: if true;
+    }
+
+    match /ptk/{docId} {
+      allow read, write: if true;
+    }
+
     match /test/{docId} {
       allow read: if true;
     }

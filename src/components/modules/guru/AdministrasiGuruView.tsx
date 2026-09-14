@@ -39,7 +39,9 @@ import {
   X,
   Printer,
   CheckSquare,
-  GraduationCap
+  GraduationCap,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { LaporanCeklisGuruView } from './LaporanCeklisGuruView';
 import { RiwayatPelatihanGuruView } from './RiwayatPelatihanGuruView';
@@ -76,6 +78,8 @@ export const AdministrasiGuruView: React.FC = () => {
     users,
     administrasiGuruList,
     riwayatPelatihanList,
+    isSyncingAdministrasiGuru,
+    syncAdministrasiGuruToCloud,
     addAdministrasiGuru,
     updateAdministrasiGuru,
     deleteAdministrasiGuru,
@@ -104,6 +108,7 @@ export const AdministrasiGuruView: React.FC = () => {
   const [previewDoc, setPreviewDoc] = useState<DokumenAdministrasiGuru | null>(null);
   const [feedbackDoc, setFeedbackDoc] = useState<DokumenAdministrasiGuru | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState<boolean>(false);
 
   // Form State
   const [formData, setFormData] = useState<{
@@ -244,30 +249,34 @@ export const AdministrasiGuruView: React.FC = () => {
     setIsFormModalOpen(true);
   };
 
-  // Handle form submit
-  const handleSaveForm = (e: React.FormEvent) => {
+  // Handle form submit with Firestore Cloud Persistence
+  const handleSaveForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.judul.trim()) {
       showToast('warning', 'Judul Wajib Diisi', 'Mohon lengkapi judul dokumen administrasi guru.');
       return;
     }
 
-    if (editingDoc) {
-      updateAdministrasiGuru(editingDoc.id, {
-        ...formData,
-        status: editingDoc.status === 'Disetujui Penuh' ? 'Ditinjau KS' : editingDoc.status
-      });
-      showToast('success', 'Dokumen Diperbarui', 'Data dokumen administrasi guru berhasil diperbarui.');
-    } else {
-      addAdministrasiGuru({
-        ...formData,
-        status: 'Draft'
-      });
-      showToast('success', 'Dokumen Disimpan', 'Dokumen administrasi berhasil disimpan sebagai Draft. Jangan lupa klik Kirim jika siap dinilai.');
+    setIsActionLoading(true);
+    try {
+      if (editingDoc) {
+        await updateAdministrasiGuru(editingDoc.id, {
+          ...formData,
+          status: editingDoc.status === 'Disetujui Penuh' ? 'Ditinjau KS' : editingDoc.status
+        });
+      } else {
+        await addAdministrasiGuru({
+          ...formData,
+          status: 'Draft'
+        });
+      }
+      setIsFormModalOpen(false);
+      setEditingDoc(null);
+    } catch (err) {
+      console.error('Error saving form:', err);
+    } finally {
+      setIsActionLoading(false);
     }
-
-    setIsFormModalOpen(false);
-    setEditingDoc(null);
   };
 
   // Handle open feedback modal (for Kepala Sekolah / Admin)
@@ -282,8 +291,8 @@ export const AdministrasiGuruView: React.FC = () => {
     });
   };
 
-  // Handle submit feedback
-  const handleSaveFeedback = (e: React.FormEvent) => {
+  // Handle submit feedback with Firestore Cloud Persistence
+  const handleSaveFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedbackDoc) return;
     if (!feedbackData.umpanBalikPositif.trim()) {
@@ -291,8 +300,15 @@ export const AdministrasiGuruView: React.FC = () => {
       return;
     }
 
-    berikanUmpanBalikPositif(feedbackDoc.id, feedbackData);
-    setFeedbackDoc(null);
+    setIsActionLoading(true);
+    try {
+      await berikanUmpanBalikPositif(feedbackDoc.id, feedbackData);
+      setFeedbackDoc(null);
+    } catch (err) {
+      console.error('Error saving feedback:', err);
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   // Quick preset feedback filler
@@ -316,10 +332,32 @@ export const AdministrasiGuruView: React.FC = () => {
     });
   };
 
-  // Handle Delete
-  const handleDeleteDoc = (id: string) => {
-    deleteAdministrasiGuru(id);
-    setDeleteConfirmId(null);
+  // Handle Delete with Firestore Cloud Persistence
+  const handleDeleteDoc = async (id: string) => {
+    setIsActionLoading(true);
+    try {
+      await deleteAdministrasiGuru(id);
+    } catch (err) {
+      console.error('Error deleting doc:', err);
+    } finally {
+      setIsActionLoading(false);
+      setDeleteConfirmId(null);
+    }
+  };
+
+  // Handle Send with Firestore Cloud Persistence
+  const handleKirimDoc = async (id: string) => {
+    setIsActionLoading(true);
+    try {
+      await kirimAdministrasiGuru(id);
+      if (previewDoc && previewDoc.id === id) {
+        setPreviewDoc(prev => prev ? { ...prev, status: 'Terkirim', tanggalKirim: new Date().toISOString().split('T')[0] } : null);
+      }
+    } catch (err) {
+      console.error('Error sending doc:', err);
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   return (
@@ -328,7 +366,7 @@ export const AdministrasiGuruView: React.FC = () => {
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-2xl p-6 text-white border border-slate-800 shadow-sm relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold tracking-wide border border-emerald-400/30 flex items-center gap-1.5">
                 <FolderCheck className="w-3.5 h-3.5" />
                 MODUL ADMINISTRASI GURU
@@ -336,16 +374,35 @@ export const AdministrasiGuruView: React.FC = () => {
               <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-semibold border border-blue-400/20">
                 TA 2024/2025
               </span>
+              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px] font-medium border border-emerald-500/30 flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                </span>
+                <span>Database Cloud Terhubung</span>
+              </span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               Administrasi & Perangkat Ajar Guru
             </h1>
             <p className="text-slate-300 text-xs mt-1 max-w-2xl leading-relaxed">
-              Platform pengelolaan dokumen perangkat pembelajaran guru (Perencanaan, Pelaksanaan, Penilaian, Kesiswaan, Pendukung), terintegrasi langsung dengan Google Drive dan fitur Umpan Balik Positif Kepala Sekolah.
+              Platform pengelolaan dokumen perangkat pembelajaran guru (Perencanaan, Pelaksanaan, Penilaian, Kesiswaan, Pendukung), terhubung real-time dengan database Firestore dan Google Drive sekolah.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              id="btn-sync-database-guru"
+              type="button"
+              disabled={isSyncingAdministrasiGuru}
+              onClick={() => syncAdministrasiGuruToCloud()}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-blue-300 border border-blue-500/40 text-xs font-semibold transition-colors disabled:opacity-60 cursor-pointer"
+              title="Sinkronkan seluruh data dokumen administrasi guru ke database cloud"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingAdministrasiGuru ? 'animate-spin text-blue-400' : 'text-blue-400'}`} />
+              <span>{isSyncingAdministrasiGuru ? 'Menyinkronkan...' : 'Sinkron Database'}</span>
+            </button>
+
             <a
               id="btn-drive-folder-guru"
               href={TARGET_DRIVE_FOLDER_URL}
@@ -720,8 +777,10 @@ export const AdministrasiGuruView: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div>
+            {/* TAMPILAN DESKTOP: TABEL */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                   <th className="py-3 px-4">Guru & Identitas</th>
@@ -912,7 +971,7 @@ export const AdministrasiGuruView: React.FC = () => {
                             <button
                               id={`btn-kirim-${docItem.id}`}
                               type="button"
-                              onClick={() => kirimAdministrasiGuru(docItem.id)}
+                              onClick={() => handleKirimDoc(docItem.id)}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shadow-xs transition-colors"
                               title="Kirim dokumen ke Kepala Sekolah"
                             >
@@ -968,6 +1027,185 @@ export const AdministrasiGuruView: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* TAMPILAN RESPONSIVE HP (MOBILE CARDS) */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {filteredList.map((docItem) => {
+              const isOwner =
+                currentUser.id === docItem.guruId ||
+                currentUser.nama === docItem.namaGuru ||
+                (currentUser.nip && docItem.nipGuru && currentUser.nip.replace(/\s+/g, '') === docItem.nipGuru.replace(/\s+/g, '')) ||
+                isGuru ||
+                isAdmin;
+              const canEditOrDelete = isOwner || isGuru || isAdmin;
+              const canFeedback = isKS || isAdmin;
+
+              return (
+                <div key={docItem.id} className="p-4 space-y-3 bg-white hover:bg-slate-50/70 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 mb-1 border border-slate-200">
+                        {docItem.kategori}
+                      </span>
+                      <h4 className="font-bold text-slate-900 text-sm leading-snug">
+                        {docItem.judul}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {docItem.jenisDokumen}
+                      </p>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="shrink-0">
+                      {docItem.status === 'Disetujui Penuh' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Disetujui
+                        </span>
+                      )}
+                      {docItem.status === 'Terkirim' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                          <Clock className="w-3 h-3" />
+                          Review KS
+                        </span>
+                      )}
+                      {docItem.status === 'Ditinjau KS' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-300">
+                          <Sparkles className="w-3 h-3" />
+                          Ditinjau
+                        </span>
+                      )}
+                      {docItem.status === 'Draft' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                          <Edit2 className="w-3 h-3" />
+                          Draft
+                        </span>
+                      )}
+                      {docItem.status === 'Perlu Revisi' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                          <AlertCircle className="w-3 h-3" />
+                          Revisi
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Metadata Guru & File */}
+                  <div className="grid grid-cols-2 gap-2 text-[11px] p-2.5 rounded-lg bg-slate-50 border border-slate-150">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Guru Pendidik:</span>
+                      <span className="font-semibold text-slate-800 truncate block">{docItem.namaGuru}</span>
+                      <span className="text-[10px] text-slate-500 block">{docItem.kelas}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Tanggal:</span>
+                      <span className="text-slate-700">{docItem.tanggalUpload}</span>
+                      {docItem.tanggalKirim && (
+                        <span className="text-[10px] text-blue-600 block font-medium">Kirim: {docItem.tanggalKirim}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Google Drive Link */}
+                  <div className="flex items-center justify-between gap-2">
+                    <a
+                      href={docItem.fileUrl || TARGET_DRIVE_FOLDER_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-semibold hover:underline min-w-0"
+                    >
+                      <FileText className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate max-w-[180px]">{docItem.fileName || 'Buka di Google Drive'}</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                    {docItem.fileSize && (
+                      <span className="text-[10px] text-slate-400 font-mono shrink-0">{docItem.fileSize}</span>
+                    )}
+                  </div>
+
+                  {/* Positive Feedback Snippet */}
+                  {docItem.umpanBalikPositif && (
+                    <div className="p-2.5 rounded-lg bg-emerald-50/90 border border-emerald-200 text-xs">
+                      <div className="flex items-center justify-between gap-1 text-emerald-800 font-bold mb-1">
+                        <span className="flex items-center gap-1">
+                          <MessageSquareHeart className="w-3.5 h-3.5 text-emerald-600" />
+                          Apresiasi KS:
+                        </span>
+                        <div className="flex items-center text-amber-500">
+                          {[...Array(docItem.bintangApresiasi || 5)].map((_, i) => (
+                            <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-slate-700 italic text-[11px]">
+                        "{docItem.umpanBalikPositif}"
+                      </p>
+                      <span className="text-[10px] text-emerald-700 mt-1 block font-medium">
+                        — {docItem.penilaiKS || 'Kepala Sekolah'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Action Buttons for Mobile */}
+                  <div className="flex flex-wrap items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDoc(docItem)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Detail</span>
+                    </button>
+
+                    {docItem.status === 'Draft' && (isOwner || isAdmin) && (
+                      <button
+                        type="button"
+                        onClick={() => handleKirimDoc(docItem.id)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Kirim ke KS</span>
+                      </button>
+                    )}
+
+                    {canFeedback && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenFeedbackModal(docItem)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors"
+                      >
+                        <MessageSquareHeart className="w-3.5 h-3.5" />
+                        <span>{docItem.umpanBalikPositif ? 'Edit Catatan' : 'Beri Apresiasi'}</span>
+                      </button>
+                    )}
+
+                    {canEditOrDelete && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(docItem)}
+                        className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {canEditOrDelete && (
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(docItem.id)}
+                        className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"
+                        title="Hapus"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
         )}
       </div>
     </div>
@@ -1233,9 +1471,11 @@ export const AdministrasiGuruView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                  disabled={isActionLoading}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
                 >
-                  {editingDoc ? 'Simpan Perubahan' : 'Simpan Dokumen'}
+                  {isActionLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isActionLoading ? 'Menyimpan ke Database...' : (editingDoc ? 'Simpan Perubahan ke Database' : 'Simpan Dokumen ke Database')}</span>
                 </button>
               </div>
             </form>
@@ -1389,14 +1629,14 @@ export const AdministrasiGuruView: React.FC = () => {
                 {previewDoc.status === 'Draft' && (
                   <button
                     type="button"
+                    disabled={isActionLoading}
                     onClick={() => {
-                      kirimAdministrasiGuru(previewDoc.id);
-                      setPreviewDoc(null);
+                      handleKirimDoc(previewDoc.id);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Kirim ke KS</span>
+                    <span>{isActionLoading ? 'Mengirim...' : 'Kirim ke KS'}</span>
                   </button>
                 )}
 
@@ -1610,9 +1850,11 @@ export const AdministrasiGuruView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                  disabled={isActionLoading}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
                 >
-                  Kirim Umpan Balik Positif
+                  {isActionLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isActionLoading ? 'Menyimpan Apresiasi...' : 'Kirim Umpan Balik Positif ke Database'}</span>
                 </button>
               </div>
             </form>
@@ -1629,7 +1871,7 @@ export const AdministrasiGuruView: React.FC = () => {
             </div>
             <h4 className="text-sm font-bold text-slate-900">Hapus Dokumen Administrasi?</h4>
             <p className="text-xs text-slate-500 mt-1">
-              Dokumen ini akan dihapus dari daftar administrasi sekolah. Berkas yang sudah tersimpan di Google Drive tetap aman di cloud.
+              Dokumen ini akan dihapus dari daftar administrasi dan database cloud. Berkas yang tersimpan di Google Drive tetap aman di cloud.
             </p>
             <div className="flex items-center justify-center gap-2 mt-5">
               <button
@@ -1641,10 +1883,12 @@ export const AdministrasiGuruView: React.FC = () => {
               </button>
               <button
                 type="button"
+                disabled={isActionLoading}
                 onClick={() => handleDeleteDoc(deleteConfirmId)}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
               >
-                Ya, Hapus
+                {isActionLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>{isActionLoading ? 'Menghapus...' : 'Ya, Hapus'}</span>
               </button>
             </div>
           </div>

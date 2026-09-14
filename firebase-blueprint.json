@@ -36,6 +36,64 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id"]
+    },
+    "DokumenAdministrasiGuru": {
+      "title": "DokumenAdministrasiGuru",
+      "description": "Dokumen administrasi dan perangkat ajar guru",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "guruId": { "type": "string" },
+        "namaGuru": { "type": "string" },
+        "nipGuru": { "type": "string" },
+        "kategori": { "type": "string" },
+        "jenisDokumen": { "type": "string" },
+        "judul": { "type": "string" },
+        "tahunAjaran": { "type": "string" },
+        "semester": { "type": "string" },
+        "kelas": { "type": "string" },
+        "mataPelajaran": { "type": "string" },
+        "tanggalUpload": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileSize": { "type": "string" },
+        "catatanGuru": { "type": "string" },
+        "status": { "type": "string" },
+        "tanggalKirim": { "type": "string" },
+        "catatanKSReview": { "type": "string" },
+        "umpanBalikPositif": { "type": "string" },
+        "penilaiKS": { "type": "string" },
+        "tanggalUmpanBalik": { "type": "string" },
+        "bintangApresiasi": { "type": "number" },
+        "aspekApresiasi": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "guruId", "namaGuru", "judul", "kategori", "jenisDokumen", "status"]
+    },
+    "PTKRecord": {
+      "title": "PTKRecord",
+      "description": "Data master pendidik dan tenaga kependidikan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "nip": { "type": "string" },
+        "nuptk": { "type": "string" },
+        "jabatan": { "type": "string" },
+        "jenisKelamin": { "type": "string" },
+        "statusKepegawaian": { "type": "string" },
+        "pendidikanTerakhir": { "type": "string" },
+        "jurusan": { "type": "string" },
+        "sertifikasi": { "type": "string" },
+        "tmtKerja": { "type": "string" },
+        "tugasMengajar": { "type": "string" },
+        "telepon": { "type": "string" },
+        "email": { "type": "string" },
+        "foto": { "type": "string" },
+        "statusAktif": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "nama", "jabatan"]
     }
   },
   "firestore": {
@@ -46,6 +104,14 @@
     "/school_data/{documentId}": {
       "schema": "GenericSchoolRecord",
       "description": "Collections of school administrative datasets"
+    },
+    "/administrasi_guru/{docId}": {
+      "schema": "DokumenAdministrasiGuru",
+      "description": "Koleksi dokumen administrasi dan perangkat ajar guru"
+    },
+    "/ptk/{ptkId}": {
+      "schema": "PTKRecord",
+      "description": "Koleksi data master PTK (Pendidik & Tenaga Kependidikan)"
     }
   }
 }
