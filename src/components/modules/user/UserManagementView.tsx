@@ -26,7 +26,8 @@ import {
   Eye,
   EyeOff,
   GraduationCap,
-  Info
+  Info,
+  AlertTriangle
 } from 'lucide-react';
 
 export const UserManagementView: React.FC = () => {
@@ -48,6 +49,7 @@ export const UserManagementView: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<string>('Semua');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserAccount | null>(null);
 
   // Modals for Teacher Login and Credentials Printing
   const [isLoginGuruModalOpen, setIsLoginGuruModalOpen] = useState(false);
@@ -509,16 +511,25 @@ export const UserManagementView: React.FC = () => {
                   >
                     <Edit className="w-3.5 h-3.5" />
                   </button>
-                  {safeUserList.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => deleteUser(user.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                      title="Hapus Akun"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setUserToDelete(user)}
+                    disabled={user.id === currentUser.id || safeUserList.length <= 1}
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                      user.id === currentUser.id || safeUserList.length <= 1
+                        ? 'text-slate-300 cursor-not-allowed opacity-40'
+                        : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                    }`}
+                    title={
+                      user.id === currentUser.id
+                        ? 'Akun sedang aktif digunakan'
+                        : safeUserList.length <= 1
+                        ? 'Minimal harus ada 1 akun pengguna di sistem'
+                        : `Hapus Akun ${user.nama}`
+                    }
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -570,16 +581,18 @@ export const UserManagementView: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                  <span>NIP (Username Login Guru)</span>
-                  <span className="text-[10px] text-emerald-700 font-bold">18 Digit</span>
+                  <span>NIP / Username Login</span>
+                  <span className="text-[10px] text-emerald-700 font-bold">
+                    {formData.role === 'guru' || formData.role === 'kepala_sekolah' ? '18 Digit' : 'Opsional / Kode'}
+                  </span>
                 </label>
                 <input
                   type="text"
                   value={formData.nip}
                   onChange={e => setFormData({ ...formData, nip: e.target.value })}
-                  placeholder="Contoh: 19920814 201903 2 011"
+                  placeholder={formData.role === 'guru' ? 'Contoh: 19920814 201903 2 011' : 'NIP atau username login'}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-mono"
-                  required
+                  required={formData.role === 'guru' || formData.role === 'kepala_sekolah'}
                 />
               </div>
 
@@ -610,14 +623,15 @@ export const UserManagementView: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Email Akun Belajar / Sekolah</label>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Email Akun Belajar / Sekolah <span className="text-slate-400 font-normal text-[11px]">(Opsional)</span>
+                </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="nama@guru.sd.belajar.id"
+                  placeholder="nama@guru.sd.belajar.id atau admin@sdnlanto.sch.id"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                  required
                 />
               </div>
 
@@ -729,6 +743,49 @@ export const UserManagementView: React.FC = () => {
         users={safeUserList}
         profilSekolah={profilSekolah}
       />
+
+      {/* Modal Konfirmasi Hapus Akun Pengguna */}
+      <Modal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        title="Hapus Akun Pengguna"
+        subtitle="Konfirmasi penghapusan data akun dari sistem & database cloud"
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-rose-900 space-y-1">
+              <p className="font-bold text-sm">Apakah Anda yakin ingin menghapus akun ini?</p>
+              <p className="text-rose-800">
+                Akun <strong className="text-rose-950 font-black">{userToDelete?.nama}</strong> (Peran: <span className="font-semibold uppercase">{userToDelete?.role}</span>, NIP/ID: {userToDelete?.nip || userToDelete?.id || '-'}) akan dihapus permanen dari sistem dan database Firestore cloud.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={() => setUserToDelete(null)}
+              className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (userToDelete) {
+                  deleteUser(userToDelete.id);
+                  setUserToDelete(null);
+                }
+              }}
+              className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Ya, Hapus Akun</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

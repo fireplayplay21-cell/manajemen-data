@@ -775,8 +775,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetUserPasswordToDefault = (userId: string) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, password: '123456' } : u));
-    if (currentUser.id === userId) {
+    setUsers(prev => {
+      const next = prev.map(u => (u.id.toLowerCase() === userId.toLowerCase() || u.id === userId) ? { ...u, password: '123456' } : u);
+      saveToStorage('users', next);
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        users: next,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(err => console.warn('Error saving reset password to Firestore:', err));
+      return next;
+    });
+    if (currentUser.id.toLowerCase() === userId.toLowerCase() || currentUser.id === userId) {
       setCurrentUser(prev => ({ ...prev, password: '123456' }));
     }
     showToast('success', 'Password Direset', 'Password pengguna berhasil direset ke standar default: 123456');
@@ -1360,65 +1368,113 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       tanggalEnrol: new Date().toISOString().split('T')[0]
     };
 
-    setUsers(prev => [newUser, ...prev]);
+    setUsers(prev => {
+      const next = [newUser, ...prev];
+      saveToStorage('users', next);
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        users: next,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(err => console.warn('Error persisting users to Firestore:', err));
+      return next;
+    });
 
     // If new user has a photo, sync back to PTK if PTK lacks one
     if (matchingPTK && finalFoto && (!matchingPTK.foto || matchingPTK.foto !== finalFoto)) {
-      setPtkList(prev => prev.map(p => p.id === matchingPTK.id ? { ...p, foto: finalFoto } : p));
+      setPtkList(prev => {
+        const nextPTK = prev.map(p => p.id === matchingPTK.id ? { ...p, foto: finalFoto } : p);
+        saveToStorage('ptk', nextPTK);
+        setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+          ptkList: nextPTK,
+          updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(() => {});
+        return nextPTK;
+      });
     }
 
-    showToast('success', 'Pengguna Terenrol', `Akun ${newUser.nama} (${newUser.role.toUpperCase()}) berhasil ditambahkan.`);
+    showToast('success', 'Pengguna Terenrol', `Akun ${newUser.nama} (${newUser.role.toUpperCase()}) berhasil ditambahkan ke database.`);
   };
 
   const updateUser = (id: string, userData: Partial<UserAccount>) => {
     let updatedUser: UserAccount | undefined;
 
-    setUsers(prev => prev.map(u => {
-      if (u.id === id) {
-        const merged = { ...u, ...userData };
-        updatedUser = merged;
-        return merged;
-      }
-      return u;
-    }));
+    setUsers(prev => {
+      const next = prev.map(u => {
+        if (u.id.toLowerCase() === id.toLowerCase() || u.id === id) {
+          const merged = { ...u, ...userData };
+          updatedUser = merged;
+          return merged;
+        }
+        return u;
+      });
+      saveToStorage('users', next);
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        users: next,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(err => console.warn('Error updating users in Firestore:', err));
+      return next;
+    });
 
-    if (currentUser.id === id) {
+    if (currentUser.id.toLowerCase() === id.toLowerCase() || currentUser.id === id) {
       setCurrentUser(prev => ({ ...prev, ...userData }));
     }
 
     // Synchronize changes to matching PTK record in Manajemen Data PTK
     if (updatedUser) {
       const target = updatedUser;
-      setPtkList(prev => prev.map(p => {
-        if (isSamePerson(p, target)) {
-          return {
-            ...p,
-            ...(userData.nama ? { nama: userData.nama } : {}),
-            ...(userData.nip ? { nip: userData.nip } : {}),
-            ...(userData.foto !== undefined ? { foto: userData.foto } : {}),
-            ...(userData.email ? { email: userData.email } : {}),
-            ...(userData.telepon ? { telepon: userData.telepon } : {}),
-            ...(userData.jabatan ? { jabatan: userData.jabatan } : {})
-          };
+      setPtkList(prev => {
+        let ptkChanged = false;
+        const nextPTK = prev.map(p => {
+          if (isSamePerson(p, target)) {
+            ptkChanged = true;
+            return {
+              ...p,
+              ...(userData.nama ? { nama: userData.nama } : {}),
+              ...(userData.nip ? { nip: userData.nip } : {}),
+              ...(userData.foto !== undefined ? { foto: userData.foto } : {}),
+              ...(userData.email ? { email: userData.email } : {}),
+              ...(userData.telepon ? { telepon: userData.telepon } : {}),
+              ...(userData.jabatan ? { jabatan: userData.jabatan } : {})
+            };
+          }
+          return p;
+        });
+
+        if (ptkChanged) {
+          saveToStorage('ptk', nextPTK);
+          setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+            ptkList: nextPTK,
+            updatedAt: new Date().toISOString()
+          }, { merge: true }).catch(() => {});
         }
-        return p;
-      }));
+        return nextPTK;
+      });
     }
 
-    showToast('success', 'Pengguna Diperbarui', 'Data akun pengguna dan foto profil berhasil diperbarui & disinkronkan ke PTK.');
+    showToast('success', 'Pengguna Diperbarui', 'Data akun pengguna dan profil berhasil diperbarui & disinkronkan ke database.');
   };
 
   const deleteUser = (id: string) => {
     if (users.length <= 1) {
-      showToast('error', 'Gagal Menghapus', 'Minimal harus ada 1 pengguna tersisa.');
+      showToast('error', 'Gagal Menghapus', 'Minimal harus ada 1 pengguna tersisa dalam sistem.');
       return;
     }
-    setUsers(prev => prev.filter(u => u.id !== id));
-    if (currentUser.id === id) {
-      const remaining = users.filter(u => u.id !== id);
-      setCurrentUser(remaining[0]);
+
+    if (currentUser.id.toLowerCase() === id.toLowerCase() || currentUser.id === id) {
+      showToast('warning', 'Tidak Dapat Menghapus Akun Aktif', 'Anda sedang login menggunakan akun ini. Silakan beralih ke akun lain terlebih dahulu jika ingin menghapusnya.');
+      return;
     }
-    showToast('info', 'Pengguna Dihapus', 'Akun pengguna berhasil dihapus dari sistem.');
+
+    setUsers(prev => {
+      const next = prev.filter(u => u.id.toLowerCase() !== id.toLowerCase() && u.id !== id);
+      saveToStorage('users', next);
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        users: next,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(err => console.warn('Error deleting user from Firestore:', err));
+      return next;
+    });
+
+    showToast('info', 'Pengguna Dihapus', 'Akun pengguna berhasil dihapus dari sistem & database cloud.');
   };
 
   // Helper factory for generic state operations with LocalStorage & Firestore persistence

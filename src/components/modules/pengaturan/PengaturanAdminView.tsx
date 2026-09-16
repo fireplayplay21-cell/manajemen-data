@@ -48,6 +48,7 @@ import {
   Layers,
   FileSpreadsheet,
   Check,
+  AlertTriangle,
   Camera,
   Image as ImageIcon
 } from 'lucide-react';
@@ -109,6 +110,7 @@ export const PengaturanAdminView: React.FC = () => {
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserAccount | null>(null);
   const [quickPhotoUser, setQuickPhotoUser] = useState<UserAccount | null>(null);
   const [isLoginGuruModalOpen, setIsLoginGuruModalOpen] = useState(false);
   const [isKartuAksesModalOpen, setIsKartuAksesModalOpen] = useState(false);
@@ -812,21 +814,26 @@ export const PengaturanAdminView: React.FC = () => {
                                 <Edit className="w-3.5 h-3.5" />
                               </button>
 
-                              {/* Delete user */}
-                              {user.role !== 'admin' && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (window.confirm(`Apakah Anda yakin ingin menghapus akun ${user.nama}?`)) {
-                                      deleteUser(user.id);
-                                    }
-                                  }}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                  title="Hapus Akun"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
+                               {/* Delete user */}
+                              <button
+                                type="button"
+                                onClick={() => setUserToDelete(user)}
+                                disabled={user.id === currentUser.id || safeUserList.length <= 1}
+                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                  user.id === currentUser.id || safeUserList.length <= 1
+                                    ? 'text-slate-300 cursor-not-allowed opacity-40'
+                                    : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                                }`}
+                                title={
+                                  user.id === currentUser.id
+                                    ? 'Tidak dapat menghapus akun yang sedang Anda gunakan saat ini'
+                                    : safeUserList.length <= 1
+                                    ? 'Minimal harus ada 1 akun pengguna di sistem'
+                                    : `Hapus Akun ${user.nama}`
+                                }
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -964,26 +971,56 @@ export const PengaturanAdminView: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const cred = `Nama: ${guru.nama}\nNIP / Username: ${guru.nip}\nPassword: ${guru.password || '123456'}\nURL: Website SIM SDN Lanto Dg. Pasewang`;
-                            copyText(cred, `Kredensial ${guru.nama}`);
-                          }}
-                          className="inline-flex items-center gap-1 text-slate-600 hover:text-emerald-700 font-semibold cursor-pointer"
-                        >
-                          <Copy className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Salin Kredensial</span>
-                        </button>
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const cred = `Nama: ${guru.nama}\nNIP / Username: ${guru.nip}\nPassword: ${guru.password || '123456'}\nURL: Website SIM SDN Lanto Dg. Pasewang`;
+                              copyText(cred, `Kredensial ${guru.nama}`);
+                            }}
+                            className="inline-flex items-center gap-1 text-slate-600 hover:text-emerald-700 font-semibold cursor-pointer text-[11px]"
+                            title="Salin kredensial login"
+                          >
+                            <Copy className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="hidden sm:inline">Salin</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(guru)}
+                            className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors cursor-pointer"
+                            title="Edit Data Akun Guru"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setUserToDelete(guru)}
+                            disabled={guru.id === currentUser.id || safeUserList.length <= 1}
+                            className={`p-1 rounded-md transition-colors cursor-pointer ${
+                              guru.id === currentUser.id || safeUserList.length <= 1
+                                ? 'text-slate-200 cursor-not-allowed opacity-30'
+                                : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                            }`}
+                            title={
+                              guru.id === currentUser.id
+                                ? 'Sedang aktif digunakan'
+                                : `Hapus Akun ${guru.nama}`
+                            }
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
 
                         <button
                           type="button"
                           onClick={() => handleTestLoginGuru(guru)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold border border-emerald-200/80 cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold border border-emerald-200/80 cursor-pointer text-xs"
                         >
                           <LogIn className="w-3 h-3 text-emerald-600" />
-                          <span>Uji Login NIP</span>
+                          <span>Uji Login</span>
                         </button>
                       </div>
                     </div>
@@ -1321,14 +1358,14 @@ export const PengaturanAdminView: React.FC = () => {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                NIP (18 Digit untuk Login) <span className="text-rose-500">*</span>
+                NIP / Username Login {formData.role === 'guru' || formData.role === 'kepala_sekolah' ? <span className="text-rose-500">*</span> : <span className="text-slate-400 font-normal text-[11px]">(NIP Guru / Username Admin)</span>}
               </label>
               <input
                 type="text"
-                required
+                required={formData.role === 'guru' || formData.role === 'kepala_sekolah'}
                 value={formData.nip}
                 onChange={e => setFormData({ ...formData, nip: e.target.value })}
-                placeholder="197501012000032001"
+                placeholder="197501012000032001 atau username"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
@@ -1585,6 +1622,49 @@ export const PengaturanAdminView: React.FC = () => {
         isOpen={isDriveModalOpen}
         onClose={() => setIsDriveModalOpen(false)}
       />
+
+      {/* MODAL KONFIRMASI HAPUS PENGGUNA */}
+      <Modal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        title="Hapus Akun Pengguna"
+        subtitle="Konfirmasi penghapusan data akun dari sistem & database cloud"
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-rose-900 space-y-1">
+              <p className="font-bold text-sm">Apakah Anda yakin ingin menghapus akun ini?</p>
+              <p className="text-rose-800">
+                Akun <strong className="text-rose-950 font-black">{userToDelete?.nama}</strong> (Peran: <span className="font-semibold uppercase">{userToDelete?.role}</span>, NIP/ID: {userToDelete?.nip || userToDelete?.id || '-'}) akan dihapus permanen dari sistem dan database Firestore cloud.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={() => setUserToDelete(null)}
+              className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (userToDelete) {
+                  deleteUser(userToDelete.id);
+                  setUserToDelete(null);
+                }
+              }}
+              className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Ya, Hapus Akun</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
