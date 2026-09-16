@@ -132,7 +132,7 @@ export const PerencanaanBerbasisDataView: React.FC = () => {
             Perencanaan Berbasis Data (PBD)
           </h2>
           <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-            Siklus peningkatan mutu berkelanjutan: <strong>1. Rapo Pendidikan</strong> → <strong>2. Identifikasi Masalah</strong> → <strong>3. Analisis Akar Masalah</strong> → <strong>4. Program Intervensi</strong> → <strong>5. Target & Tindak Lanjut</strong>.
+            Siklus peningkatan mutu berkelanjutan: <strong>1. Rapor Pendidikan</strong> → <strong>2. Identifikasi Masalah</strong> → <strong>3. Analisis Akar Masalah</strong> → <strong>4. Program Intervensi</strong> → <strong>5. Target & Tindak Lanjut</strong>.
           </p>
         </div>
 
@@ -154,7 +154,7 @@ export const PerencanaanBerbasisDataView: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           <div className="p-3 rounded-xl bg-white/10 border border-white/10">
-            <div className="font-bold text-blue-300 mb-1">1. Rapo Pendidikan</div>
+            <div className="font-bold text-blue-300 mb-1">1. Rapor Pendidikan</div>
             <p className="text-[11px] text-slate-300">Melihat capaian indikator ANBK, SPM, dan iklim keamanan sekolah.</p>
           </div>
           <div className="p-3 rounded-xl bg-white/10 border border-white/10">
