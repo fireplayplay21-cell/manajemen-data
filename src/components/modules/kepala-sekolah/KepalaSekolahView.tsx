@@ -74,7 +74,10 @@ export const KepalaSekolahView: React.FC = () => {
     updateRencanaPerbaikan,
     deleteRencanaPerbaikan,
     currentUser,
-    profilSekolah
+    profilSekolah,
+    activeTahunPelajaran,
+    activeSemester,
+    availableTahunPelajaranOptions
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'agenda' | 'rapat' | 'tamu' | 'jurnal' | 'sk' | 'perbaikan'>('agenda');
@@ -175,7 +178,7 @@ export const KepalaSekolahView: React.FC = () => {
     nomorSK: `800/0${keputusanSKList.length + 1}/SK-LDP/VIII/2024`,
     tentang: '',
     tanggalDitetapkan: new Date().toISOString().split('T')[0],
-    tahunAjaran: '2024/2025',
+    tahunAjaran: activeTahunPelajaran,
     status: 'Berlaku',
     kategori: 'Pembagian Tugas',
     ringkasanKeputusan: '',
@@ -193,7 +196,7 @@ export const KepalaSekolahView: React.FC = () => {
     strategiPerbaikan: '',
     indikatorKeberhasilan: '',
     penanggungJawab: 'Tim Pengembang Kurikulum & Kepala Sekolah',
-    timeline: 'Semester Ganjil 2024/2025',
+    timeline: `${activeSemester} ${activeTahunPelajaran}`,
     status: 'Inisiasi',
     fileUrl: ''
   });
@@ -414,7 +417,7 @@ export const KepalaSekolahView: React.FC = () => {
       nomorSK: `800/0${keputusanSKList.length + 1}/SK-LDP/VIII/2024`,
       tentang: '',
       tanggalDitetapkan: new Date().toISOString().split('T')[0],
-      tahunAjaran: '2024/2025',
+      tahunAjaran: activeTahunPelajaran,
       status: 'Berlaku',
       kategori: 'Pembagian Tugas',
       ringkasanKeputusan: '',
@@ -430,7 +433,7 @@ export const KepalaSekolahView: React.FC = () => {
       nomorSK: item.nomorSK,
       tentang: item.tentang,
       tanggalDitetapkan: item.tanggalDitetapkan,
-      tahunAjaran: item.tahunAjaran,
+      tahunAjaran: item.tahunAjaran || activeTahunPelajaran,
       status: item.status,
       kategori: item.kategori,
       ringkasanKeputusan: item.ringkasanKeputusan,
@@ -449,7 +452,7 @@ export const KepalaSekolahView: React.FC = () => {
       strategiPerbaikan: '',
       indikatorKeberhasilan: '',
       penanggungJawab: 'Tim Pengembang Kurikulum & Kepala Sekolah',
-      timeline: 'Semester Ganjil 2024/2025',
+      timeline: `${activeSemester} ${activeTahunPelajaran}`,
       status: 'Inisiasi',
       fileUrl: ''
     });
@@ -1831,15 +1834,22 @@ export const KepalaSekolahView: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Tahun Ajaran</label>
-              <input
-                type="text"
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-semibold text-slate-700">Tahun Ajaran</label>
+                <span className="text-[10px] text-emerald-600 font-medium">Database Admin</span>
+              </div>
+              <select
                 value={skForm.tahunAjaran}
                 onChange={e => setSkForm({ ...skForm, tahunAjaran: e.target.value })}
-                placeholder="2024/2025"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
                 required
-              />
+              >
+                {availableTahunPelajaranOptions.map(th => (
+                  <option key={th} value={th}>
+                    {th} {th === activeTahunPelajaran ? '★ (Aktif)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Status Keberlakuan</label>

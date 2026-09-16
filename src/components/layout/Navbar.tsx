@@ -27,6 +27,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
     logout,
     resetAllData,
     profilSekolah,
+    activeTahunPelajaran,
+    activeSemester,
     isSidebarCollapsed,
     toggleSidebarCollapse
   } = useApp();
@@ -190,8 +192,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
       {/* Right side: Actions & User Switcher */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 text-xs font-medium text-slate-500">
         
-        <span className="hidden md:inline font-medium text-slate-500 text-xs">
-          Tahun Ajaran {profilSekolah?.tahunPelajaran || '2024/2025'}
+        <span className="hidden md:inline font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full text-xs">
+          TP {activeTahunPelajaran} ({activeSemester})
         </span>
 
         {/* Reset Data to initial */}

@@ -23,7 +23,17 @@ import {
 } from 'lucide-react';
 
 export const DataKelasSection: React.FC = () => {
-  const { kelasList, siswaList, ptkList, addKelas, updateKelas, deleteKelas } = useApp();
+  const {
+    kelasList,
+    siswaList,
+    ptkList,
+    activeTahunPelajaran,
+    activeSemester,
+    availableTahunPelajaranOptions,
+    addKelas,
+    updateKelas,
+    deleteKelas
+  } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFase, setSelectedFase] = useState<string>('Semua');
@@ -44,8 +54,8 @@ export const DataKelasSection: React.FC = () => {
     nipWaliKelas: '',
     ruangan: '',
     kapasitas: 30,
-    tahunAjaran: '2024/2025',
-    semester: 'Ganjil',
+    tahunAjaran: activeTahunPelajaran,
+    semester: activeSemester.includes('Genap') ? 'Genap' : 'Ganjil',
     keterangan: ''
   });
 
@@ -65,8 +75,8 @@ export const DataKelasSection: React.FC = () => {
       nipWaliKelas: firstGuru?.nip || '',
       ruangan: 'Ruang Kelas',
       kapasitas: 30,
-      tahunAjaran: '2024/2025',
-      semester: 'Ganjil',
+      tahunAjaran: activeTahunPelajaran,
+      semester: activeSemester.includes('Genap') ? 'Genap' : 'Ganjil',
       keterangan: ''
     });
     setIsModalOpen(true);
@@ -612,14 +622,21 @@ export const DataKelasSection: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-slate-700 font-medium mb-1">Tahun Ajaran</label>
-              <input
-                type="text"
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-slate-700 font-medium">Tahun Ajaran</label>
+                <span className="text-[10px] text-emerald-600 font-medium">Admin Data</span>
+              </div>
+              <select
                 value={formData.tahunAjaran}
                 onChange={(e) => setFormData({ ...formData, tahunAjaran: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                placeholder="2024/2025"
-              />
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+              >
+                {availableTahunPelajaranOptions.map(th => (
+                  <option key={th} value={th}>
+                    {th} {th === activeTahunPelajaran ? '★ (Aktif)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -627,7 +644,7 @@ export const DataKelasSection: React.FC = () => {
               <select
                 value={formData.semester}
                 onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
               >
                 <option value="Ganjil">Ganjil</option>
                 <option value="Genap">Genap</option>

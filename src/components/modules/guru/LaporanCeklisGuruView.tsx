@@ -58,6 +58,8 @@ export const LaporanCeklisGuruView: React.FC<LaporanCeklisGuruViewProps> = ({
     currentUser,
     users,
     administrasiGuruList,
+    activeTahunPelajaran,
+    activeSemester,
     profilSekolah,
     showToast
   } = useApp();
@@ -251,7 +253,7 @@ export const LaporanCeklisGuruView: React.FC<LaporanCeklisGuruViewProps> = ({
                 SUPERVISI & KONTROL KEPALA SEKOLAH
               </span>
               <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-semibold border border-blue-400/20">
-                Tahun Ajaran 2024/2025
+                Tahun Ajaran {activeTahunPelajaran} ({activeSemester})
               </span>
             </div>
             <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
@@ -955,7 +957,7 @@ export const LaporanCeklisGuruView: React.FC<LaporanCeklisGuruViewProps> = ({
               REKAPITULASI LAPORAN CEKLIS SUPERVISI ADMINISTRASI GURU
             </h3>
             <p className="text-xs text-slate-600">
-              Tahun Ajaran 2024/2025 • Semester 1 (Ganjil)
+              Tahun Ajaran {activeTahunPelajaran} • {activeSemester}
             </p>
           </div>
 

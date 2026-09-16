@@ -293,6 +293,13 @@ interface AppContextType {
   setAktifDatabaseSekolah: (id: string) => void;
   sinkronkanKeProfilSekolah: (databaseSekolahId?: string) => void;
 
+  // Single Source of Truth Tahun Pelajaran & Semester (Dari Database Akun Admin)
+  activeTahunPelajaran: string;
+  activeSemester: string;
+  availableTahunPelajaranOptions: string[];
+  setActiveTahunPelajaranDanSemester: (tahunPelajaran: string, semester: string) => Promise<void>;
+  isTahunPelajaranSyncedFromAdmin: boolean;
+
   // Firebase & Cloud Sync
   firebaseUser: User | null;
   isFirebaseConnected: boolean;
@@ -464,7 +471,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (Array.isArray(cloudData.jurnalKSList)) setJurnalKSList(cloudData.jurnalKSList);
         if (Array.isArray(cloudData.keputusanSKList)) setKeputusanSKList(cloudData.keputusanSKList);
         if (Array.isArray(cloudData.rencanaPerbaikanList)) setRencanaPerbaikanList(cloudData.rencanaPerbaikanList);
-        if (Array.isArray(cloudData.administrasiGuruList)) setAdministrasiGuruList(cloudData.administrasiGuruList);
+        // Only load administrasiGuruList from master doc if local is empty to avoid clobbering the dedicated collection sync
+        if (Array.isArray(cloudData.administrasiGuruList)) {
+          setAdministrasiGuruList(prev => (prev.length === 0 ? cloudData.administrasiGuruList : prev));
+        }
         if (Array.isArray(cloudData.riwayatPelatihanList)) setRiwayatPelatihanList(cloudData.riwayatPelatihanList);
         const now = new Date().toLocaleTimeString('id-ID');
         setLastCloudSync(now);
@@ -905,28 +915,157 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return databaseSekolahList.find(d => d.isAktif) || databaseSekolahList[0];
   }, [databaseSekolahList]);
 
-  const updateProfilSekolah = (data: Partial<ProfilSekolah>) => {
+  // Single Source of Truth: Academic Year & Active Semester (Master Admin Source)
+  const activeTahunPelajaran = useMemo(() => {
+    return profilSekolah.tahunPelajaran || activeDatabaseSekolah?.tahunPelajaran || '2024/2025';
+  }, [profilSekolah.tahunPelajaran, activeDatabaseSekolah?.tahunPelajaran]);
+
+  const activeSemester = useMemo(() => {
+    return profilSekolah.semester || activeDatabaseSekolah?.semesterAktif || 'Semester Ganjil';
+  }, [profilSekolah.semester, activeDatabaseSekolah?.semesterAktif]);
+
+  const availableTahunPelajaranOptions = useMemo(() => {
+    const yearsSet = new Set<string>();
+    if (activeTahunPelajaran) yearsSet.add(activeTahunPelajaran);
+    databaseSekolahList.forEach(d => {
+      if (d.tahunPelajaran) yearsSet.add(d.tahunPelajaran);
+    });
+    // Standard recent academic year options in Indonesia
+    ['2026/2027', '2025/2026', '2024/2025', '2023/2024', '2022/2023'].forEach(y => yearsSet.add(y));
+    return Array.from(yearsSet);
+  }, [activeTahunPelajaran, databaseSekolahList]);
+
+  const isTahunPelajaranSyncedFromAdmin = useMemo(() => {
+    return isFirebaseConnected || Boolean(lastCloudSync);
+  }, [isFirebaseConnected, lastCloudSync]);
+
+  // Method to set active academic year & semester centrally from Admin Account
+  const setActiveTahunPelajaranDanSemester = async (tahun: string, semester: string): Promise<void> => {
+    const cleanTahun = tahun.trim();
+    const cleanSemester = semester.trim();
+    if (!cleanTahun) return;
+
+    let updatedProfil: ProfilSekolah = { ...profilSekolah, tahunPelajaran: cleanTahun, semester: cleanSemester };
+    setProfilSekolah(prev => {
+      updatedProfil = { ...prev, tahunPelajaran: cleanTahun, semester: cleanSemester };
+      saveToStorage('profilSekolah', updatedProfil);
+      return updatedProfil;
+    });
+
+    let updatedDbList: DatabaseSekolah[] = [];
+    setDatabaseSekolahList(prev => {
+      let matched = false;
+      const mapped = prev.map(item => {
+        if (item.tahunPelajaran === cleanTahun) {
+          matched = true;
+          return {
+            ...item,
+            isAktif: true,
+            semesterAktif: cleanSemester,
+            terakhirDisinkronkan: new Date().toLocaleString('id-ID') + ' WITA',
+            updatedAt: new Date().toISOString().split('T')[0]
+          };
+        }
+        return { ...item, isAktif: false };
+      });
+
+      if (!matched) {
+        const newRecord: DatabaseSekolah = {
+          id: `DBS-${Date.now().toString().slice(-4)}`,
+          namaSekolah: profilSekolah.namaSekolah || 'UPTD SPF SDN Lanto Dg. Pasewang',
+          tahunPelajaran: cleanTahun,
+          semesterAktif: cleanSemester,
+          npsn: profilSekolah.npsn || '40307399',
+          statusSekolah: profilSekolah.statusSekolah || 'Negeri',
+          bentukPendidikan: profilSekolah.bentukPendidikan || 'Sekolah Dasar (SD)',
+          kurikulum: profilSekolah.kurikulum || 'Kurikulum Merdeka',
+          ptkIdKepala: '',
+          namaKepalaSekolah: profilSekolah.kepalaSekolah || 'Ika Ayuvia Johan., M.Pd',
+          nipKepalaSekolah: profilSekolah.nipKepalaSekolah || '19700412 199303 2 004',
+          kontakTelepon: profilSekolah.telepon || '0411-872345',
+          kontakEmail: profilSekolah.email || 'sdnlantodgpasewang@gmail.com',
+          website: profilSekolah.website || 'https://sdnlantodgpasewang.sch.id',
+          alamatSekolah: profilSekolah.alamat || 'Jl. Lanto Dg. Pasewang No. 12, Kel. Maricaya, Kec. Makassar, Kota Makassar, Sulawesi Selatan 90142',
+          akreditasi: profilSekolah.akreditasi || 'A (Unggul)',
+          isAktif: true,
+          terakhirDisinkronkan: new Date().toLocaleString('id-ID') + ' WITA',
+          keterangan: `Database Master Terpusat TP ${cleanTahun}`,
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        updatedDbList = [newRecord, ...mapped.map(m => ({ ...m, isAktif: false }))];
+      } else {
+        updatedDbList = mapped;
+      }
+      saveToStorage('databaseSekolah', updatedDbList);
+      return updatedDbList;
+    });
+
+    try {
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        profilSekolah: updatedProfil,
+        databaseSekolahList: updatedDbList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      showToast(
+        'success',
+        'Tahun Pelajaran Berhasil Ditetapkan',
+        `Tahun Pelajaran "${cleanTahun}" (${cleanSemester}) berhasil ditetapkan sebagai Sumber Data Tunggal dan disinkronkan ke seluruh akun.`
+      );
+    } catch (err) {
+      console.warn('Error saving to cloud Firestore:', err);
+      showToast('warning', 'Tersimpan Lokal', 'Tahun pelajaran tersimpan di memori lokal.');
+    }
+  };
+
+  const updateProfilSekolah = async (data: Partial<ProfilSekolah>) => {
+    let updatedProfil: ProfilSekolah = { ...profilSekolah, ...data };
+    let updatedDbList: DatabaseSekolah[] = databaseSekolahList;
+
     setProfilSekolah(prev => {
       const targetLogo = data.logoUrl !== undefined ? data.logoUrl : (prev.logoUrl || DEFAULT_LOGO_SEKOLAH);
       const updated = { ...prev, ...data, logoUrl: targetLogo };
+      updatedProfil = updated;
       try {
         if (targetLogo) {
           localStorage.setItem('school_logo_custom', targetLogo);
           localStorage.setItem('school_logo_locked', 'true');
         }
       } catch (e) {}
-      try {
-        setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
-          profilSekolah: updated
-        }, { merge: true }).catch(() => {});
-      } catch (e) {}
       saveToStorage('profilSekolah', updated);
       return updated;
     });
-    showToast('success', 'Profil Diperbarui', 'Data profil sekolah berhasil disimpan.');
+
+    if (data.tahunPelajaran || data.semester) {
+      setDatabaseSekolahList(prev => {
+        const mapped = prev.map(item => {
+          if (item.isAktif) {
+            return {
+              ...item,
+              tahunPelajaran: data.tahunPelajaran || item.tahunPelajaran,
+              semesterAktif: data.semester || item.semesterAktif,
+              updatedAt: new Date().toISOString().split('T')[0]
+            };
+          }
+          return item;
+        });
+        updatedDbList = mapped;
+        saveToStorage('databaseSekolah', mapped);
+        return mapped;
+      });
+    }
+
+    try {
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        profilSekolah: updatedProfil,
+        databaseSekolahList: updatedDbList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (e) {}
+
+    showToast('success', 'Profil Diperbarui', 'Data profil sekolah berhasil disimpan ke cloud database.');
   };
 
-  const sinkronkanKeProfilSekolah = (databaseSekolahId?: string) => {
+  const sinkronkanKeProfilSekolah = async (databaseSekolahId?: string) => {
     const target = databaseSekolahId
       ? databaseSekolahList.find(d => d.id === databaseSekolahId)
       : (databaseSekolahList.find(d => d.isAktif) || databaseSekolahList[0]);
@@ -944,6 +1083,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       minute: '2-digit'
     }) + ' WITA';
 
+    let updatedProfil: ProfilSekolah = profilSekolah;
     setProfilSekolah(prev => {
       const currentLogo = prev.logoUrl || (typeof window !== 'undefined' ? localStorage.getItem('school_logo_custom') : null) || DEFAULT_LOGO_SEKOLAH;
       const updated: ProfilSekolah = {
@@ -964,24 +1104,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         akreditasi: target.akreditasi,
         logoUrl: currentLogo
       };
-
+      updatedProfil = updated;
       saveToStorage('profilSekolah', updated);
-      try {
-        setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
-          profilSekolah: updated
-        }, { merge: true }).catch(() => {});
-      } catch (e) {}
       return updated;
     });
 
     // Mark target as active and record sync time
-    setDatabaseSekolahList(prev =>
-      prev.map(item =>
-        item.id === target.id
-          ? { ...item, terakhirDisinkronkan: nowStr, isAktif: true }
-          : { ...item, isAktif: false }
-      )
+    const updatedDbList = databaseSekolahList.map(item =>
+      item.id === target.id
+        ? { ...item, terakhirDisinkronkan: nowStr, isAktif: true }
+        : { ...item, isAktif: false }
     );
+    setDatabaseSekolahList(updatedDbList);
+    saveToStorage('databaseSekolah', updatedDbList);
+
+    try {
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        profilSekolah: updatedProfil,
+        databaseSekolahList: updatedDbList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (e) {}
 
     showToast(
       'success',
@@ -990,7 +1133,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const addDatabaseSekolah = (data: Omit<DatabaseSekolah, 'id'>, autoSyncToProfil: boolean = false) => {
+  const addDatabaseSekolah = async (data: Omit<DatabaseSekolah, 'id'>, autoSyncToProfil: boolean = false) => {
     const newId = `DBS-${Date.now().toString().slice(-4)}`;
     const nowStr = new Date().toLocaleString('id-ID', {
       day: 'numeric',
@@ -1007,13 +1150,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString().split('T')[0]
     };
 
+    let updatedDbList: DatabaseSekolah[] = [];
     setDatabaseSekolahList(prev => {
       if (newItem.isAktif) {
-        return [newItem, ...prev.map(p => ({ ...p, isAktif: false }))];
+        updatedDbList = [newItem, ...prev.map(p => ({ ...p, isAktif: false }))];
+      } else {
+        updatedDbList = [newItem, ...prev];
       }
-      return [newItem, ...prev];
+      saveToStorage('databaseSekolah', updatedDbList);
+      return updatedDbList;
     });
 
+    let updatedProfil: ProfilSekolah | null = null;
     if (autoSyncToProfil || newItem.isAktif) {
       setProfilSekolah(prev => {
         const updated: ProfilSekolah = {
@@ -1033,22 +1181,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           alamat: newItem.alamatSekolah,
           akreditasi: newItem.akreditasi
         };
+        updatedProfil = updated;
         saveToStorage('profilSekolah', updated);
-        try {
-          setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
-            profilSekolah: updated
-          }, { merge: true }).catch(() => {});
-        } catch (e) {}
         return updated;
       });
     }
 
+    try {
+      const payload: any = {
+        databaseSekolahList: updatedDbList,
+        updatedAt: new Date().toISOString()
+      };
+      if (updatedProfil) {
+        payload.profilSekolah = updatedProfil;
+      }
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), payload, { merge: true });
+    } catch (e) {}
+
     showToast('success', 'Database Sekolah Ditambahkan', `Master data "${newItem.namaSekolah}" (TP ${newItem.tahunPelajaran}) berhasil dibuat.`);
   };
 
-  const updateDatabaseSekolah = (id: string, data: Partial<DatabaseSekolah>, autoSyncToProfil: boolean = false) => {
-    setDatabaseSekolahList(prev =>
-      prev.map(item => {
+  const updateDatabaseSekolah = async (id: string, data: Partial<DatabaseSekolah>, autoSyncToProfil: boolean = false) => {
+    let updatedDbList: DatabaseSekolah[] = [];
+    setDatabaseSekolahList(prev => {
+      const mapped = prev.map(item => {
         if (item.id === id) {
           return { ...item, ...data, updatedAt: new Date().toISOString().split('T')[0] };
         }
@@ -1056,39 +1212,140 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return { ...item, isAktif: false };
         }
         return item;
-      })
-    );
+      });
+      updatedDbList = mapped;
+      saveToStorage('databaseSekolah', mapped);
+      return mapped;
+    });
+
+    const targetItem = updatedDbList.find(d => d.id === id);
+    let updatedProfil: ProfilSekolah | null = null;
+    if ((autoSyncToProfil || targetItem?.isAktif) && targetItem) {
+      setProfilSekolah(prev => {
+        const updated: ProfilSekolah = {
+          ...prev,
+          namaSekolah: targetItem.namaSekolah,
+          tahunPelajaran: targetItem.tahunPelajaran,
+          semester: targetItem.semesterAktif,
+          npsn: targetItem.npsn,
+          statusSekolah: targetItem.statusSekolah,
+          bentukPendidikan: targetItem.bentukPendidikan,
+          kurikulum: targetItem.kurikulum,
+          kepalaSekolah: targetItem.namaKepalaSekolah,
+          nipKepalaSekolah: targetItem.nipKepalaSekolah,
+          telepon: targetItem.kontakTelepon,
+          email: targetItem.kontakEmail,
+          website: targetItem.website,
+          alamat: targetItem.alamatSekolah,
+          akreditasi: targetItem.akreditasi
+        };
+        updatedProfil = updated;
+        saveToStorage('profilSekolah', updated);
+        return updated;
+      });
+    }
+
+    try {
+      const payload: any = {
+        databaseSekolahList: updatedDbList,
+        updatedAt: new Date().toISOString()
+      };
+      if (updatedProfil) {
+        payload.profilSekolah = updatedProfil;
+      }
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), payload, { merge: true });
+    } catch (e) {}
 
     if (autoSyncToProfil) {
-      sinkronkanKeProfilSekolah(id);
+      showToast('success', 'Database Diperbarui & Disinkronkan', 'Perubahan database sekolah berhasil disimpan dan disinkronkan ke profil.');
     } else {
       showToast('success', 'Database Diperbarui', 'Perubahan database sekolah berhasil disimpan.');
     }
   };
 
-  const deleteDatabaseSekolah = (id: string) => {
+  const deleteDatabaseSekolah = async (id: string) => {
+    let updatedDbList: DatabaseSekolah[] = [];
+    let canDelete = true;
     setDatabaseSekolahList(prev => {
       if (prev.length <= 1) {
         showToast('warning', 'Tidak Bisa Dihapus', 'Minimal harus terdapat 1 data master Database Sekolah.');
+        canDelete = false;
         return prev;
       }
       const filtered = prev.filter(item => item.id !== id);
       if (!filtered.some(f => f.isAktif) && filtered.length > 0) {
         filtered[0] = { ...filtered[0], isAktif: true };
       }
-      showToast('info', 'Database Dihapus', 'Data database sekolah berhasil dihapus.');
+      updatedDbList = filtered;
+      saveToStorage('databaseSekolah', filtered);
       return filtered;
     });
+
+    if (canDelete) {
+      try {
+        await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+          databaseSekolahList: updatedDbList,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (e) {}
+      showToast('info', 'Database Dihapus', 'Data database sekolah berhasil dihapus.');
+    }
   };
 
-  const setAktifDatabaseSekolah = (id: string) => {
-    setDatabaseSekolahList(prev =>
-      prev.map(item => ({
+  const setAktifDatabaseSekolah = async (id: string) => {
+    let updatedDbList: DatabaseSekolah[] = [];
+    let activeRecord: DatabaseSekolah | undefined;
+
+    setDatabaseSekolahList(prev => {
+      const mapped = prev.map(item => ({
         ...item,
-        isAktif: item.id === id
-      }))
-    );
-    showToast('info', 'Database Aktif Diganti', 'Database sekolah aktif berhasil ditentukan. Klik "Sinkronkan ke Profil" untuk memperbarui profil.');
+        isAktif: item.id === id,
+        terakhirDisinkronkan: item.id === id ? new Date().toLocaleString('id-ID') + ' WITA' : item.terakhirDisinkronkan
+      }));
+      updatedDbList = mapped;
+      activeRecord = mapped.find(m => m.id === id);
+      saveToStorage('databaseSekolah', mapped);
+      return mapped;
+    });
+
+    let updatedProfil: ProfilSekolah | null = null;
+    if (activeRecord) {
+      setProfilSekolah(prev => {
+        const updated: ProfilSekolah = {
+          ...prev,
+          namaSekolah: activeRecord!.namaSekolah,
+          tahunPelajaran: activeRecord!.tahunPelajaran,
+          semester: activeRecord!.semesterAktif,
+          npsn: activeRecord!.npsn,
+          statusSekolah: activeRecord!.statusSekolah,
+          bentukPendidikan: activeRecord!.bentukPendidikan,
+          kurikulum: activeRecord!.kurikulum,
+          kepalaSekolah: activeRecord!.namaKepalaSekolah,
+          nipKepalaSekolah: activeRecord!.nipKepalaSekolah,
+          telepon: activeRecord!.kontakTelepon,
+          email: activeRecord!.kontakEmail,
+          website: activeRecord!.website,
+          alamat: activeRecord!.alamatSekolah,
+          akreditasi: activeRecord!.akreditasi
+        };
+        updatedProfil = updated;
+        saveToStorage('profilSekolah', updated);
+        return updated;
+      });
+    }
+
+    try {
+      const payload: any = {
+        databaseSekolahList: updatedDbList,
+        updatedAt: new Date().toISOString()
+      };
+      if (updatedProfil) {
+        payload.profilSekolah = updatedProfil;
+      }
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), payload, { merge: true });
+    } catch (e) {}
+
+    showToast('success', 'Database Aktif Diganti', `Master aktif sekarang adalah "${activeRecord?.namaSekolah || ''}" (TP ${activeRecord?.tahunPelajaran || ''} • ${activeRecord?.semesterAktif || ''}).`);
   };
 
   const addUser = (userData: Omit<UserAccount, 'id' | 'tanggalEnrol'>) => {
@@ -1164,24 +1421,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('info', 'Pengguna Dihapus', 'Akun pengguna berhasil dihapus dari sistem.');
   };
 
-  // Helper factory for generic state operations
+  // Helper factory for generic state operations with LocalStorage & Firestore persistence
   const createCRUD = <T extends { id: string }>(
     setter: React.Dispatch<React.SetStateAction<T[]>>,
     entityName: string,
-    prefix: string
+    prefix: string,
+    storageKey?: string,
+    firestoreField?: string
   ) => {
     return {
       add: (item: Omit<T, 'id'>) => {
         const newItem = { ...item, id: `${prefix}-${Date.now().toString().slice(-4)}` } as T;
-        setter(prev => [newItem, ...prev]);
+        setter(prev => {
+          const next = [newItem, ...prev];
+          if (storageKey) saveToStorage(storageKey, next);
+          if (firestoreField) {
+            setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+              [firestoreField]: next,
+              updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(err => console.warn(`Error persisting ${firestoreField}:`, err));
+          }
+          return next;
+        });
         showToast('success', 'Data Ditambahkan', `Data ${entityName} berhasil disimpan.`);
       },
       update: (id: string, item: Partial<T>) => {
-        setter(prev => prev.map(el => (el.id === id ? { ...el, ...item } : el)));
+        setter(prev => {
+          const next = prev.map(el => (el.id === id ? { ...el, ...item } : el));
+          if (storageKey) saveToStorage(storageKey, next);
+          if (firestoreField) {
+            setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+              [firestoreField]: next,
+              updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(err => console.warn(`Error persisting ${firestoreField}:`, err));
+          }
+          return next;
+        });
         showToast('success', 'Data Diperbarui', `Perubahan data ${entityName} berhasil disimpan.`);
       },
       delete: (id: string) => {
-        setter(prev => prev.filter(el => el.id !== id));
+        setter(prev => {
+          const next = prev.filter(el => el.id !== id);
+          if (storageKey) saveToStorage(storageKey, next);
+          if (firestoreField) {
+            setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+              [firestoreField]: next,
+              updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(err => console.warn(`Error deleting ${firestoreField}:`, err));
+          }
+          return next;
+        });
         showToast('info', 'Data Dihapus', `Data ${entityName} berhasil dihapus.`);
       }
     };
@@ -1304,13 +1593,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('info', 'Data Dihapus', 'Data PTK berhasil dihapus dari database.');
   };
 
-  const perencanaanCRUD = createCRUD<DokumenPerencanaan>(setPerencanaanList, 'Perencanaan', 'DOC');
-  const pbdCRUD = createCRUD<IndikatorRaporPendidikan>(setPbdList, 'Perencanaan Berbasis Data', 'PBD');
-  const programUnggulanCRUD = createCRUD<ProgramUnggulan>(setProgramUnggulanList, 'Program Unggulan', 'PRG');
-  const kelasCRUD = createCRUD<KelasRecord>(setKelasList, 'Data Kelas', 'KLS');
-  const suratCRUD = createCRUD<SuratRecord>(setSuratList, 'Persuratan', 'SRT');
-  const mouCRUD = createCRUD<MOUKerjasama>(setMouList, 'MOU Kerjasama', 'MOU');
-  const siswaCRUD = createCRUD<Siswa>(setSiswaList, 'Data Siswa', 'SIS');
+  const perencanaanCRUD = createCRUD<DokumenPerencanaan>(setPerencanaanList, 'Perencanaan', 'DOC', 'perencanaan', 'perencanaanList');
+  const pbdCRUD = createCRUD<IndikatorRaporPendidikan>(setPbdList, 'Perencanaan Berbasis Data', 'PBD', 'pbd', 'pbdList');
+  const programUnggulanCRUD = createCRUD<ProgramUnggulan>(setProgramUnggulanList, 'Program Unggulan', 'PRG', 'programUnggulan', 'programUnggulanList');
+  const kelasCRUD = createCRUD<KelasRecord>(setKelasList, 'Data Kelas', 'KLS', 'kelas', 'kelasList');
+  const suratCRUD = createCRUD<SuratRecord>(setSuratList, 'Persuratan', 'SRT', 'surat', 'suratList');
+  const mouCRUD = createCRUD<MOUKerjasama>(setMouList, 'MOU Kerjasama', 'MOU', 'mou', 'mouList');
+  const siswaCRUD = createCRUD<Siswa>(setSiswaList, 'Data Siswa', 'SIS', 'siswa', 'siswaList');
 
   const bulkAddSiswa = (newSiswaList: Omit<Siswa, 'id'>[]): number => {
     if (!newSiswaList || newSiswaList.length === 0) return 0;
@@ -1319,7 +1608,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...item,
       id: `SIS-${now.toString().slice(-4)}${index + 1}`
     }));
-    setSiswaList(prev => [...createdItems, ...prev]);
+    setSiswaList(prev => {
+      const next = [...createdItems, ...prev];
+      saveToStorage('siswa', next);
+      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        siswaList: next,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(err => console.warn('Error persisting bulk siswa to Firestore:', err));
+      return next;
+    });
     showToast(
       'success',
       'Upload Massal Berhasil',
@@ -1327,24 +1624,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
     return createdItems.length;
   };
-  const presensiCRUD = createCRUD<PresensiHarian>(setPresensiList, 'Presensi Kelas', 'PRS');
-  const prestasiCRUD = createCRUD<PrestasiSiswa>(setPrestasiList, 'Prestasi Siswa', 'PST');
-  const programKarakterCRUD = createCRUD<ProgramKarakter>(setProgramKarakterList, 'Program Karakter', 'PK');
-  const ekskulCRUD = createCRUD<Ekstrakurikuler>(setEkskulList, 'Ekstrakurikuler', 'EKS');
-  const masalahSiswaCRUD = createCRUD<MasalahSiswa>(setMasalahSiswaList, 'Bimbingan & Masalah Siswa', 'MSH');
-  const supervisiAkdCRUD = createCRUD<SupervisiAkademik>(setSupervisiAkademikList, 'Supervisi Akademik', 'SUP-AKD');
-  const supervisiManCRUD = createCRUD<SupervisiManajerial>(setSupervisiManajerialList, 'Supervisi Manajerial', 'SUP-MAN');
-  const rkasCRUD = createCRUD<ItemRKAS>(setRkasList, 'RKAS', 'RKAS');
-  const transaksiCRUD = createCRUD<TransaksiKeuangan>(setTransaksiList, 'Transaksi Keuangan', 'TRX');
-  const sarprasCRUD = createCRUD<ItemSarpras>(setSarprasList, 'Inventaris Sarpras', 'SAR');
-  const pemeliharaanCRUD = createCRUD<PemeliharaanSarpras>(setPemeliharaanList, 'Pemeliharaan Sarpras', 'MNT');
-  const peminjamanCRUD = createCRUD<PeminjamanSarpras>(setPeminjamanList, 'Peminjaman Sarpras', 'PINJ');
-  const agendaKSCRUD = createCRUD<AgendaHarianKS>(setAgendaKSList, 'Agenda Kepala Sekolah', 'AGD');
-  const agendaRapatCRUD = createCRUD<AgendaRapat>(setAgendaRapatList, 'Agenda Rapat Pegawai', 'RPT');
-  const bukuTamuCRUD = createCRUD<BukuTamu>(setBukuTamuList, 'Buku Tamu', 'TMU');
-  const jurnalKSCRUD = createCRUD<JurnalKepemimpinan>(setJurnalKSList, 'Jurnal Kepemimpinan', 'JRN');
-  const keputusanSKCRUD = createCRUD<KeputusanSK>(setKeputusanSKList, 'Keputusan & SK', 'SK');
-  const rencanaPerbaikanCRUD = createCRUD<RencanaPerbaikan>(setRencanaPerbaikanList, 'Rencana Perbaikan', 'RPB');
+  const presensiCRUD = createCRUD<PresensiHarian>(setPresensiList, 'Presensi Kelas', 'PRS', 'presensi', 'presensiList');
+  const prestasiCRUD = createCRUD<PrestasiSiswa>(setPrestasiList, 'Prestasi Siswa', 'PST', 'prestasi', 'prestasiList');
+  const programKarakterCRUD = createCRUD<ProgramKarakter>(setProgramKarakterList, 'Program Karakter', 'PK', 'programKarakter', 'programKarakterList');
+  const ekskulCRUD = createCRUD<Ekstrakurikuler>(setEkskulList, 'Ekstrakurikuler', 'EKS', 'ekskul', 'ekskulList');
+  const masalahSiswaCRUD = createCRUD<MasalahSiswa>(setMasalahSiswaList, 'Bimbingan & Masalah Siswa', 'MSH', 'masalahSiswa', 'masalahSiswaList');
+  const supervisiAkdCRUD = createCRUD<SupervisiAkademik>(setSupervisiAkademikList, 'Supervisi Akademik', 'SUP-AKD', 'supervisiAkademik', 'supervisiAkademikList');
+  const supervisiManCRUD = createCRUD<SupervisiManajerial>(setSupervisiManajerialList, 'Supervisi Manajerial', 'SUP-MAN', 'supervisiManajerial', 'supervisiManajerialList');
+  const rkasCRUD = createCRUD<ItemRKAS>(setRkasList, 'RKAS', 'RKAS', 'rkas', 'rkasList');
+  const transaksiCRUD = createCRUD<TransaksiKeuangan>(setTransaksiList, 'Transaksi Keuangan', 'TRX', 'transaksi', 'transaksiList');
+  const sarprasCRUD = createCRUD<ItemSarpras>(setSarprasList, 'Inventaris Sarpras', 'SAR', 'sarpras', 'sarprasList');
+  const pemeliharaanCRUD = createCRUD<PemeliharaanSarpras>(setPemeliharaanList, 'Pemeliharaan Sarpras', 'MNT', 'pemeliharaan', 'pemeliharaanList');
+  const peminjamanCRUD = createCRUD<PeminjamanSarpras>(setPeminjamanList, 'Peminjaman Sarpras', 'PINJ', 'peminjaman', 'peminjamanList');
+  const agendaKSCRUD = createCRUD<AgendaHarianKS>(setAgendaKSList, 'Agenda Kepala Sekolah', 'AGD', 'agendaKS', 'agendaKSList');
+  const agendaRapatCRUD = createCRUD<AgendaRapat>(setAgendaRapatList, 'Agenda Rapat Pegawai', 'RPT', 'agendaRapat', 'agendaRapatList');
+  const bukuTamuCRUD = createCRUD<BukuTamu>(setBukuTamuList, 'Buku Tamu', 'TMU', 'bukuTamu', 'bukuTamuList');
+  const jurnalKSCRUD = createCRUD<JurnalKepemimpinan>(setJurnalKSList, 'Jurnal Kepemimpinan', 'JRN', 'jurnalKS', 'jurnalKSList');
+  const keputusanSKCRUD = createCRUD<KeputusanSK>(setKeputusanSKList, 'Keputusan & SK', 'SK', 'keputusanSK', 'keputusanSKList');
+  const rencanaPerbaikanCRUD = createCRUD<RencanaPerbaikan>(setRencanaPerbaikanList, 'Rencana Perbaikan', 'RPB', 'rencanaPerbaikan', 'rencanaPerbaikanList');
 
   // Dedicated CRUD for Administrasi Guru connected directly to Firestore & Real-Time Sync
   const addAdministrasiGuru = async (item: Omit<DokumenAdministrasiGuru, 'id'>): Promise<string> => {
@@ -1355,9 +1652,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: newId
     };
 
+    let updatedList: DokumenAdministrasiGuru[] = [];
     setAdministrasiGuruList(prev => {
       const updated = [newDoc, ...prev.filter(d => d.id !== newId)];
       saveToStorage('administrasiGuru', updated);
+      updatedList = updated;
       return updated;
     });
 
@@ -1368,9 +1667,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       await setDoc(doc(db, 'administrasi_guru', newId), cleaned);
 
-      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
-        administrasiGuruList: [newDoc, ...administrasiGuruList.filter(d => d.id !== newId)]
-      }, { merge: true }).catch(() => {});
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: updatedList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       showToast('success', 'Tersimpan di Database', `Dokumen "${newDoc.judul}" berhasil disimpan ke database cloud.`);
     } catch (error) {
@@ -1385,18 +1685,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateAdministrasiGuru = async (id: string, item: Partial<DokumenAdministrasiGuru>): Promise<void> => {
     setIsSyncingAdministrasiGuru(true);
-    let updatedItem: DokumenAdministrasiGuru | undefined;
+    let updatedList: DokumenAdministrasiGuru[] = [];
 
     setAdministrasiGuruList(prev => {
-      const updated = prev.map(el => {
-        if (el.id === id) {
-          const merged = { ...el, ...item };
-          updatedItem = merged;
-          return merged;
-        }
-        return el;
-      });
+      const updated = prev.map(el => (el.id === id ? { ...el, ...item } : el));
       saveToStorage('administrasiGuru', updated);
+      updatedList = updated;
       return updated;
     });
 
@@ -1407,12 +1701,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       await setDoc(doc(db, 'administrasi_guru', id), cleaned, { merge: true });
 
-      if (updatedItem) {
-        const target = updatedItem;
-        setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
-          administrasiGuruList: administrasiGuruList.map(d => d.id === id ? target : d)
-        }, { merge: true }).catch(() => {});
-      }
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: updatedList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       showToast('success', 'Database Diperbarui', 'Perubahan dokumen administrasi berhasil disimpan ke database.');
     } catch (error) {
@@ -1425,18 +1717,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteAdministrasiGuru = async (id: string): Promise<void> => {
     setIsSyncingAdministrasiGuru(true);
+    let updatedList: DokumenAdministrasiGuru[] = [];
     setAdministrasiGuruList(prev => {
       const updated = prev.filter(el => el.id !== id);
       saveToStorage('administrasiGuru', updated);
+      updatedList = updated;
       return updated;
     });
 
     try {
       await deleteDoc(doc(db, 'administrasi_guru', id));
 
-      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
-        administrasiGuruList: administrasiGuruList.filter(d => d.id !== id)
-      }, { merge: true }).catch(() => {});
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: updatedList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       showToast('info', 'Dihapus dari Database', 'Dokumen administrasi berhasil dihapus dari database cloud.');
     } catch (error) {
@@ -1447,7 +1742,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const riwayatPelatihanCRUD = createCRUD<RiwayatPelatihanGuru>(setRiwayatPelatihanList, 'Riwayat Pelatihan Guru', 'TRN');
+  const riwayatPelatihanCRUD = createCRUD<RiwayatPelatihanGuru>(setRiwayatPelatihanList, 'Riwayat Pelatihan Guru', 'TRN', 'riwayatPelatihan', 'riwayatPelatihanList');
 
   // Helper to convert Formulir 3 Tahap to Supervisi Akademik (Matriks Penilaian)
   const mapFormulirToSupervisiAkademik = (
@@ -1822,6 +2117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const kirimAdministrasiGuru = async (id: string): Promise<void> => {
     setIsSyncingAdministrasiGuru(true);
     const today = new Date().toISOString().split('T')[0];
+    let updatedList: DokumenAdministrasiGuru[] = [];
 
     setAdministrasiGuruList(prev => {
       const updated = prev.map(item => {
@@ -1835,6 +2131,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return item;
       });
       saveToStorage('administrasiGuru', updated);
+      updatedList = updated;
       return updated;
     });
 
@@ -1845,9 +2142,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
-      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
-        administrasiGuruList: administrasiGuruList.map(d => d.id === id ? { ...d, status: 'Terkirim' as const, tanggalKirim: today } : d)
-      }, { merge: true }).catch(() => {});
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: updatedList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       showToast('success', 'Dokumen Terkirim & Tersimpan', 'Dokumen berhasil dikirim ke Kepala Sekolah dan status tercatat di database.');
     } catch (error) {
@@ -1879,6 +2177,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: feedback.status || ('Disetujui Penuh' as const)
     };
 
+    let updatedList: DokumenAdministrasiGuru[] = [];
     setAdministrasiGuruList(prev => {
       const updated = prev.map(item => {
         if (item.id === id) {
@@ -1890,6 +2189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return item;
       });
       saveToStorage('administrasiGuru', updated);
+      updatedList = updated;
       return updated;
     });
 
@@ -1900,9 +2200,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       await setDoc(doc(db, 'administrasi_guru', id), cleaned, { merge: true });
 
-      setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
-        administrasiGuruList: administrasiGuruList.map(d => d.id === id ? { ...d, ...payload } : d)
-      }, { merge: true }).catch(() => {});
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        administrasiGuruList: updatedList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       showToast('success', 'Apresiasi Tersimpan di Database', 'Umpan balik positif dan apresiasi berhasil disimpan ke database.');
     } catch (error) {
@@ -1943,11 +2244,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
         profilSekolah,
+        databaseSekolahList,
         users,
         perencanaanList,
         pbdList,
         programUnggulanList,
         ptkList,
+        kelasList,
         suratList,
         mouList,
         siswaList,
@@ -1987,6 +2290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [
     profilSekolah,
+    databaseSekolahList,
     users,
     perencanaanList,
     pbdList,
@@ -2088,6 +2392,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteDatabaseSekolah,
         setAktifDatabaseSekolah,
         sinkronkanKeProfilSekolah,
+        activeTahunPelajaran,
+        activeSemester,
+        availableTahunPelajaranOptions,
+        setActiveTahunPelajaranDanSemester,
+        isTahunPelajaranSyncedFromAdmin,
         perencanaanList: Array.isArray(perencanaanList) ? perencanaanList : initialPerencanaan,
         pbdList: Array.isArray(pbdList) ? pbdList : initialPBD,
         programUnggulanList: Array.isArray(programUnggulanList) ? programUnggulanList : initialProgramUnggulan,

@@ -78,6 +78,9 @@ export const AdministrasiGuruView: React.FC = () => {
     users,
     administrasiGuruList,
     riwayatPelatihanList,
+    activeTahunPelajaran,
+    activeSemester,
+    availableTahunPelajaranOptions,
     isSyncingAdministrasiGuru,
     syncAdministrasiGuruToCloud,
     addAdministrasiGuru,
@@ -134,8 +137,8 @@ export const AdministrasiGuruView: React.FC = () => {
     kategori: 'Perencanaan Pembelajaran',
     jenisDokumen: 'Modul Ajar (pengganti RPP, berisi tujuan, langkah kegiatan, asesmen)',
     judul: '',
-    tahunAjaran: '2024/2025',
-    semester: 'Semester 1 (Ganjil)',
+    tahunAjaran: activeTahunPelajaran,
+    semester: activeSemester.includes('Genap') ? 'Semester 2 (Genap)' : 'Semester 1 (Ganjil)',
     kelas: 'Kelas 1A',
     mataPelajaran: 'Bahasa Indonesia',
     tanggalUpload: new Date().toISOString().split('T')[0],
@@ -206,15 +209,17 @@ export const AdministrasiGuruView: React.FC = () => {
   // Handle open add modal
   const handleOpenAddModal = () => {
     setEditingDoc(null);
+    const teacherUser = safeUsers.find(u => u.role === 'guru') || currentUser;
+    const targetUser = (isAdmin || isKS) ? teacherUser : currentUser;
     setFormData({
-      guruId: currentUser.id,
-      namaGuru: currentUser.nama,
-      nipGuru: currentUser.nip || '-',
+      guruId: targetUser.id,
+      namaGuru: targetUser.nama,
+      nipGuru: targetUser.nip || '-',
       kategori: 'Perencanaan Pembelajaran',
       jenisDokumen: 'Modul Ajar (pengganti RPP, berisi tujuan, langkah kegiatan, asesmen)',
       judul: '',
-      tahunAjaran: '2024/2025',
-      semester: 'Semester 1 (Ganjil)',
+      tahunAjaran: activeTahunPelajaran,
+      semester: activeSemester.includes('Genap') ? 'Semester 2 (Genap)' : 'Semester 1 (Ganjil)',
       kelas: 'Kelas 1A',
       mataPelajaran: 'Tematik Terpadu / Guru Kelas',
       tanggalUpload: new Date().toISOString().split('T')[0],
@@ -372,7 +377,7 @@ export const AdministrasiGuruView: React.FC = () => {
                 MODUL ADMINISTRASI GURU
               </span>
               <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-semibold border border-blue-400/20">
-                TA 2024/2025
+                TA {activeTahunPelajaran} ({activeSemester})
               </span>
               <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px] font-medium border border-emerald-500/30 flex items-center gap-1.5">
                 <span className="relative flex h-2 w-2">
@@ -1353,15 +1358,23 @@ export const AdministrasiGuruView: React.FC = () => {
               {/* Academic Details Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Tahun Ajaran
-                  </label>
-                  <input
-                    type="text"
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Tahun Ajaran
+                    </label>
+                    <span className="text-[10px] text-emerald-600 font-medium">Admin Data</span>
+                  </div>
+                  <select
                     value={formData.tahunAjaran}
                     onChange={(e) => setFormData(prev => ({ ...prev, tahunAjaran: e.target.value }))}
-                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                  />
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-blue-500"
+                  >
+                    {availableTahunPelajaranOptions.map(th => (
+                      <option key={th} value={th}>
+                        {th} {th === activeTahunPelajaran ? '★ (Aktif)' : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -1371,7 +1384,7 @@ export const AdministrasiGuruView: React.FC = () => {
                   <select
                     value={formData.semester}
                     onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
-                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-blue-500"
                   >
                     <option value="Semester 1 (Ganjil)">Semester 1 (Ganjil)</option>
                     <option value="Semester 2 (Genap)">Semester 2 (Genap)</option>

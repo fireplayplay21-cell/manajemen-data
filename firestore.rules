@@ -17,6 +17,7 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'ika.ayuvia7@admin.sd.belajar.id' ||
+        request.auth.token.email == 'fireplay.play21@gmail.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }

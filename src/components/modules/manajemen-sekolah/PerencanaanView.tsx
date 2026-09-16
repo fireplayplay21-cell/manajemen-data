@@ -29,7 +29,9 @@ export const PerencanaanView: React.FC = () => {
     addPerencanaan,
     updatePerencanaan,
     deletePerencanaan,
-    currentUser
+    currentUser,
+    activeTahunPelajaran,
+    availableTahunPelajaranOptions
   } = useApp();
 
   const [selectedKategori, setSelectedKategori] = useState<string>('Semua');
@@ -41,7 +43,7 @@ export const PerencanaanView: React.FC = () => {
   const [formData, setFormData] = useState<Omit<DokumenPerencanaan, 'id'>>({
     kategori: 'KSP',
     judul: '',
-    tahunAjaran: '2024/2025',
+    tahunAjaran: activeTahunPelajaran,
     penyusun: '',
     tanggalUpload: new Date().toISOString().split('T')[0],
     status: 'Draft',
@@ -75,7 +77,7 @@ export const PerencanaanView: React.FC = () => {
     setFormData({
       kategori: selectedKategori !== 'Semua' ? (selectedKategori as any) : 'KSP',
       judul: '',
-      tahunAjaran: '2024/2025',
+      tahunAjaran: activeTahunPelajaran,
       penyusun: currentUser.nama,
       tanggalUpload: new Date().toISOString().split('T')[0],
       status: 'Draft',
@@ -320,14 +322,22 @@ export const PerencanaanView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Tahun Ajaran</label>
-              <input
-                type="text"
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-semibold text-slate-700">Tahun Ajaran</label>
+                <span className="text-[10px] text-emerald-600 font-medium">Database Admin</span>
+              </div>
+              <select
                 value={formData.tahunAjaran}
                 onChange={e => setFormData({ ...formData, tahunAjaran: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
                 required
-              />
+              >
+                {availableTahunPelajaranOptions.map(th => (
+                  <option key={th} value={th}>
+                    {th} {th === activeTahunPelajaran ? '★ (Aktif)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="sm:col-span-2">

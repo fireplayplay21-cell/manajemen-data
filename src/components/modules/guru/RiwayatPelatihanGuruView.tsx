@@ -52,6 +52,8 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
     currentUser,
     users,
     riwayatPelatihanList,
+    activeTahunPelajaran,
+    availableTahunPelajaranOptions,
     addRiwayatPelatihan,
     updateRiwayatPelatihan,
     deleteRiwayatPelatihan,
@@ -100,7 +102,7 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
     tempat: 'Luring (Tatap Muka)',
     jumlahJam: 32,
     nomorSertifikat: '',
-    tahunAjaran: '2024/2025',
+    tahunAjaran: activeTahunPelajaran,
     keterangan: ''
   });
 
@@ -167,7 +169,7 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
       tempat: 'Luring (Tatap Muka)',
       jumlahJam: 32,
       nomorSertifikat: '',
-      tahunAjaran: '2024/2025',
+      tahunAjaran: activeTahunPelajaran,
       keterangan: ''
     });
     setIsFormModalOpen(true);
@@ -187,7 +189,7 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
       tempat: item.tempat || 'Luring (Tatap Muka)',
       jumlahJam: item.jumlahJam || 32,
       nomorSertifikat: item.nomorSertifikat || '',
-      tahunAjaran: item.tahunAjaran || '2024/2025',
+      tahunAjaran: item.tahunAjaran || activeTahunPelajaran,
       keterangan: item.keterangan || ''
     });
     setIsFormModalOpen(true);
@@ -861,18 +863,23 @@ export const RiwayatPelatihanGuruView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Tahun Ajaran
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Tahun Ajaran
+                    </label>
+                    <span className="text-[10px] text-indigo-600 font-semibold">Admin Data</span>
+                  </div>
                   <select
                     id="form-tahun-ajaran"
                     value={formData.tahunAjaran}
                     onChange={(e) => setFormData(prev => ({ ...prev, tahunAjaran: e.target.value }))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:bg-white focus:border-indigo-500 focus:outline-none"
                   >
-                    <option value="2024/2025">2024/2025</option>
-                    <option value="2023/2024">2023/2024</option>
-                    <option value="2022/2023">2022/2023</option>
+                    {availableTahunPelajaranOptions.map(th => (
+                      <option key={th} value={th}>
+                        {th} {th === activeTahunPelajaran ? '★ (Aktif)' : ''}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
