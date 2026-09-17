@@ -42,7 +42,10 @@ export const UserManagementView: React.FC = () => {
     ptkList,
     profilSekolah,
     resetUserPasswordToDefault,
-    syncPTKToUserAccounts
+    syncPTKToUserAccounts,
+    supervisiPrivateForGuru,
+    toggleSupervisiPrivacy,
+    showToast
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -268,6 +271,91 @@ export const UserManagementView: React.FC = () => {
             <LogIn className="w-4 h-4" />
             <span>Coba Login NIP Sekarang</span>
           </button>
+        </div>
+      </div>
+
+      {/* Setting Card: Privasi Hasil Supervisi Akademik Guru */}
+      <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
+              supervisiPrivateForGuru ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
+            }`}>
+              <Shield className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-sm font-black text-slate-900">
+                  Pengaturan Privasi Hasil Supervisi Akademik Guru
+                </h4>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 ${
+                  supervisiPrivateForGuru
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-amber-100 text-amber-800 border border-amber-300'
+                }`}>
+                  {supervisiPrivateForGuru ? (
+                    <>
+                      <Lock className="w-3 h-3 text-emerald-700" />
+                      <span>AKTIF: HANYA GURU BERSANGKUTAN</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3 h-3 text-amber-700" />
+                      <span>NONAKTIF: SEMUA GURU BISA MELIHAT</span>
+                    </>
+                  )}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                Bila diaktifkan, setiap guru yang login dengan akunnya <strong>hanya dapat melihat data dan instrumen hasil supervisi miliknya sendiri</strong> (berdasarkan NIP & nama guru). Rekan guru lain tidak dapat melihat lembar evaluasi tersebut demi menjaga etika asesmen. Administrator dan Kepala Sekolah tetap memiliki akses lengkap ke semua dokumen.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+            <button
+              type="button"
+              id="btn-toggle-supervisi-privacy-user-mgmt"
+              onClick={() => {
+                toggleSupervisiPrivacy();
+                showToast(
+                  'success',
+                  'Pengaturan Diperbarui',
+                  supervisiPrivateForGuru
+                    ? 'Privasi supervisi dinonaktifkan (semua guru dapat melihat data).'
+                    : 'Privasi supervisi diaktifkan (guru hanya dapat melihat dokumen miliknya sendiri).'
+                );
+              }}
+              className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+                supervisiPrivateForGuru ? 'bg-emerald-600' : 'bg-slate-300'
+              }`}
+              role="switch"
+              aria-checked={supervisiPrivateForGuru}
+              title={supervisiPrivateForGuru ? 'Klik untuk menonaktifkan privasi' : 'Klik untuk mengaktifkan privasi'}
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  supervisiPrivateForGuru ? 'translate-x-7' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-700">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              Status kebijakan saat ini:{' '}
+              <strong className={supervisiPrivateForGuru ? 'text-emerald-700' : 'text-amber-700'}>
+                {supervisiPrivateForGuru
+                  ? 'Terkunci Aman (Hasil Supervisi Guru Hanya Dapat Dilihat oleh Akun Guru Bersangkutan)'
+                  : 'Terbuka (Transparansi Penuh Antar-Guru)'}
+              </strong>
+            </span>
+          </div>
+          <span className="text-[11px] text-slate-400">Tersimpan otomatis di konfigurasi sistem</span>
         </div>
       </div>
 

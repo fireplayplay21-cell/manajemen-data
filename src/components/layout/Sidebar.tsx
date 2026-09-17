@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useApp, ActiveTab } from '../../context/AppContext';
+import React, { useState, useMemo } from 'react';
+import { useApp, ActiveTab, isTeacherSupervisiMatch } from '../../context/AppContext';
 import { LoginGuruModal } from '../modules/user/LoginGuruModal';
 import { DEFAULT_LOGO_SEKOLAH } from '../../data/brandingAssets';
 import {
@@ -57,10 +57,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
     profilSekolah,
     databaseSekolahList,
     isSidebarCollapsed,
-    toggleSidebarCollapse
+    toggleSidebarCollapse,
+    supervisiPrivateForGuru
   } = useApp();
 
   const [isLoginGuruModalOpen, setIsLoginGuruModalOpen] = useState(false);
+
+  // Calculate teacher's private academic supervision count
+  const guruMySupervisiCount = useMemo(() => {
+    if (currentUser.role !== 'guru') return formulirSupervisiList?.length || 0;
+    if (!supervisiPrivateForGuru) return formulirSupervisiList?.length || 0;
+    return (formulirSupervisiList || []).filter(f => isTeacherSupervisiMatch(f, currentUser)).length;
+  }, [formulirSupervisiList, currentUser, supervisiPrivateForGuru]);
 
   const handleSelectTab = (tab: ActiveTab) => {
     setActiveTab(tab);
@@ -356,7 +364,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen 
               <div className="space-y-1.5">
                 {renderNavButton('menu-guru-administrasi', 'administrasi-guru', '1. Administrasi Guru', FolderCheck, administrasiGuruList?.length || 0, undefined, 'emerald')}
                 {renderNavButton('menu-guru-program-unggulan', 'program-unggulan', '2. Program Unggulan Sekolah', Award, undefined, undefined, 'blue')}
-                {renderNavButton('menu-guru-supervisi-akademik', 'supervisi-akademik', '3. Supervisi Akademik', ClipboardCheck, formulirSupervisiList?.length || 0, undefined, 'violet')}
+                {renderNavButton('menu-guru-supervisi-akademik', 'supervisi-akademik', '3. Supervisi Akademik', ClipboardCheck, guruMySupervisiCount, undefined, 'violet')}
                 {renderNavButton('menu-guru-supervisi-manajerial', 'supervisi-manajerial', '4. Supervisi Manajerial', ShieldCheck, undefined, undefined, 'indigo')}
                 {renderNavButton('menu-guru-administrasi-ks', 'administrasi-ks', '5. Agenda Rapat & Info KS', Briefcase, agendaRapatList?.length || 0, 'PUBLIK', 'amber')}
               </div>

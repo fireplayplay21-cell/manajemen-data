@@ -1208,6 +1208,92 @@ export const initialFormulirSupervisi: FormulirSupervisiLengkap[] = [
     statusDokumen: 'Disahkan',
     createdAt: '2024-08-15',
     updatedAt: '2024-08-15'
+  },
+  {
+    id: 'FORM-SUP-03',
+    hariTanggal: 'Selasa, 20 Agustus 2024',
+    sekolah: 'UPTD SPF SDN Lanto Dg. Pasewang',
+    namaGuru: 'Andi Nurhaliza, S.Pd., Gr.',
+    nipGuru: '19920814 201903 2 011',
+    mataPelajaran: 'Bahasa Indonesia (Fase A)',
+    kelas: 'Kelas 1A',
+    waktuPercakapan: '08.00 – 09.20 (80 menit)',
+    namaSupervisor: 'Dra. Hj. Rosdiana, M.Pd.',
+    nipSupervisor: '19700412 199303 2 004',
+    tahapAktif: 'ringkasan',
+    praObservasi: {
+      tujuanPembelajaran: 'Peserta didik mampu melafalkan huruf, suku kata, dan membaca kata-kata sederhana dengan kartu bergambar berbasis fonik.',
+      aspekPengembangan: 'Penerapan pembelajaran berdiferensiasi visual dan kinestetik serta penguatan interaksi positif siswa kelas 1.',
+      strategiPembelajaran: 'Pendekatan bermain sambil belajar (game fonik), pemanfaatan media kartu huruf warna-warni, dan pendampingan terbimbing kelompok.',
+      kesiapanModulAjar: true,
+      kesiapanMediaAjar: true,
+      kesiapanInstrumenAsesmen: true,
+      catatanPraObservasi: 'Modul ajar lengkap berbasis Kurikulum Merdeka. Media kartu kata bergambar dan papan pintar fonik telah disiapkan dengan sangat baik.',
+      catatanReferensiDefault: 'Modul ajar lengkap berbasis Kurikulum Merdeka. Media kartu kata bergambar dan papan pintar fonik telah disiapkan dengan sangat baik.'
+    },
+    observasi: {
+      areaObservasi: [
+        {
+          id: 1,
+          nomor: 1,
+          aspekDanStrategi: 'Menerapkan pembelajaran diferensiasi untuk memenuhi kebutuhan belajar siswa yang beragam, yang meliputi diferensiasi konten, proses dan produk',
+          ada: true,
+          catatanPengamatan: 'Guru membagi kelompok membaca berdasarkan kemampuan awal siswa (kelompok pemula mengeja suku kata, kelompok mahir membaca kalimat bergambar).',
+          catatanReferensiDefault: 'Observee terlihat sudah menerapkan pembelajaran diferensiasi konten dan proses.'
+        },
+        {
+          id: 2,
+          nomor: 2,
+          aspekDanStrategi: 'Menggunakan alat peraga konkret gambar kegiatan, kartu kata fonik, dan media interaktif layar sentuh.',
+          ada: true,
+          catatanPengamatan: 'Alat peraga kartu bergambar sangat efektif menarik konsentrasi anak-anak kelas 1.',
+          catatanReferensiDefault: 'Alat peraga konkret digunakan optimal.'
+        },
+        {
+          id: 3,
+          nomor: 3,
+          aspekDanStrategi: 'Memberikan kebebasan siswa berinteraksi dan berkolaborasi secara kelompok kecil.',
+          ada: true,
+          catatanPengamatan: 'Interaksi antar peserta didik berlangsung hidup, tertib, dan saling membantu dalam merangkai suku kata.',
+          catatanReferensiDefault: 'Siswa aktif berinteraksi dalam kelompok.'
+        },
+        {
+          id: 4,
+          nomor: 4,
+          aspekDanStrategi: 'Mendampingi peserta didik dalam menghasilkan produk karya membaca/menulis sederhana.',
+          ada: true,
+          catatanPengamatan: 'Guru berkeliling memberikan bimbingan individual bagi peserta didik yang masih membutuhkan penguatan fonem.',
+          catatanReferensiDefault: 'Pendampingan karya terbimbing sangat baik.'
+        },
+        {
+          id: 5,
+          nomor: 5,
+          aspekDanStrategi: 'Menerapkan pendekatan saintifik dan asesmen formatif berkelanjutan.',
+          ada: true,
+          catatanPengamatan: 'Asesmen formatif observasi checklist dilakukan secara langsung selama aktivitas bermain kata berlangsung.',
+          catatanReferensiDefault: 'Pendekatan saintifik dan asesmen berjalan terpadu.'
+        }
+      ],
+      catatanTambahan: 'Pengelolaan kelas sangat hidup dan hangat. Guru sangat sabar membimbing anak yang belum lancar mengeja suku kata.',
+      catatanTambahanReferensiDefault: 'Pengelolaan kelas sangat hidup dan hangat. Guru sangat sabar membimbing anak yang belum lancar mengeja suku kata.',
+      skorKelayakanPersen: 100,
+      kategoriHasil: 'Sangat Baik'
+    },
+    pascaObservasi: {
+      refleksiGuru: 'Anak-anak sangat antusias menggunakan kartu fonik bergambar. Sebagian anak yang pemalu mulai berani bersuara di depan kelompok.',
+      ketercapaianTujuan: '100% siswa kelas 1A tuntas mencapai target pelafalan fonik hari ini.',
+      umpanBalikSupervisor: 'Pengelolaan kelas kelas 1 sangat luar biasa, penuh kehangatan dan kesabaran. Pembelajaran berdiferensiasi terwujud nyata.',
+      rencanaTindakLanjut: 'Berbagi praktik baik dalam forum KKG Gugus Mamajang tentang strategi membaca permulaan yang menyenangkan.',
+      komitmenWaktu: 'Bulan September 2024',
+      sasaranPerbaikan: 'Menambahkan variasi ice-breaking di tengah sesi untuk menjaga stamina konsentrasi siswa.',
+      rekomendasiAkhir: 'Sangat direkomendasikan sebagai model pembelajaran berdiferensiasi Fase A kelas awal.',
+      catatanReferensiDefault: 'Pertahankan metode interaktif dan terus kembangkan media ajar kreatif.'
+    },
+    sinkronKeManajerial: true,
+    manajerialRefId: 'SUP-MAN-03',
+    statusDokumen: 'Disahkan',
+    createdAt: '2024-08-20',
+    updatedAt: '2024-08-20'
   }
 ];
 

@@ -43,6 +43,50 @@ import {
 
 export type { ActiveTab };
 
+// Normalization helper to verify if an academic supervision document belongs to a specific teacher
+export const isTeacherSupervisiMatch = (
+  supervisi: { nipGuru?: string; nip?: string; namaGuru?: string } | null | undefined,
+  user: { id?: string; role?: string; nip?: string; nama?: string } | null | undefined
+): boolean => {
+  if (!user) return true;
+  // Non-guru roles (admin, kepala_sekolah, pengawas, tata_usaha) have full access to all supervisions
+  if (user.role !== 'guru') return true;
+  if (!supervisi) return false;
+
+  const docNip = ((supervisi.nipGuru || supervisi.nip || '') + '').replace(/\D/g, '');
+  const userNip = ((user.nip || '') + '').replace(/\D/g, '');
+
+  // 1. Strict match by digits of NIP (minimum 6 digits for validity)
+  if (docNip && userNip && docNip.length >= 6 && userNip.length >= 6) {
+    if (docNip === userNip) return true;
+  }
+
+  // 2. Name matching with normalization (stripping titles like S.Pd, M.Pd, Gr, Hj, etc.)
+  const docName = (supervisi.namaGuru || '').trim().toLowerCase();
+  const userName = (user.nama || '').trim().toLowerCase();
+
+  if (docName && userName) {
+    if (docName === userName) return true;
+
+    const normalize = (str: string) =>
+      str
+        .replace(/,\s*(s\.pd|m\.pd|gr|s\.ag|s\.kom|m\.si|dr|dra|drs|s\.pd\.i|s\.sos)\b/gi, '')
+        .replace(/\b(h\.|hj\.|dra\.|drs\.|dr\.)\s*/gi, '')
+        .replace(/[^a-z0-9]/g, '');
+
+    const normDoc = normalize(docName);
+    const normUser = normalize(userName);
+
+    if (normDoc && normUser) {
+      if (normDoc === normUser || normDoc.includes(normUser) || normUser.includes(normDoc)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
 import {
   initialProfilSekolah,
   initialUsers,
@@ -314,6 +358,11 @@ interface AppContextType {
   showToast: (type: ToastMessage['type'], title: string, message: string) => void;
   removeToast: (id: string) => void;
 
+  // Pengaturan Privasi Supervisi Akademik Guru
+  supervisiPrivateForGuru: boolean;
+  setSupervisiPrivateForGuru: (val: boolean) => Promise<void>;
+  toggleSupervisiPrivacy: () => void;
+
   // Reset to initial
   resetAllData: () => void;
 }
@@ -405,6 +454,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [administrasiGuruList, setAdministrasiGuruList] = useState<DokumenAdministrasiGuru[]>(() => loadFromStorage('administrasiGuru', initialAdministrasiGuru));
   const [riwayatPelatihanList, setRiwayatPelatihanList] = useState<RiwayatPelatihanGuru[]>(() => loadFromStorage('riwayatPelatihan', initialRiwayatPelatihanGuru));
 
+  // Pengaturan Privasi Supervisi Akademik: Hasil supervisi hanya dapat dilihat oleh guru yang bersangkutan saat login (Default: true)
+  const [supervisiPrivateForGuru, setSupervisiPrivateForGuruState] = useState<boolean>(() => loadFromStorage('supervisiPrivateForGuru', true));
+
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Firebase & Cloud Sync States
@@ -476,6 +528,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setAdministrasiGuruList(prev => (prev.length === 0 ? cloudData.administrasiGuruList : prev));
         }
         if (Array.isArray(cloudData.riwayatPelatihanList)) setRiwayatPelatihanList(cloudData.riwayatPelatihanList);
+        if (typeof cloudData.supervisiPrivateForGuru === 'boolean') setSupervisiPrivateForGuruState(cloudData.supervisiPrivateForGuru);
         const now = new Date().toLocaleTimeString('id-ID');
         setLastCloudSync(now);
       } else {
@@ -512,6 +565,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           rencanaPerbaikanList,
           administrasiGuruList,
           riwayatPelatihanList,
+          supervisiPrivateForGuru,
           updatedAt: new Date().toISOString()
         }, { merge: true }).then(() => {
           const now = new Date().toLocaleTimeString('id-ID');
@@ -663,6 +717,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => saveToStorage('administrasiGuru', administrasiGuruList), [administrasiGuruList]);
   useEffect(() => saveToStorage('riwayatPelatihan', riwayatPelatihanList), [riwayatPelatihanList]);
   useEffect(() => saveToStorage('databaseSekolah', databaseSekolahList), [databaseSekolahList]);
+  useEffect(() => saveToStorage('supervisiPrivateForGuru', supervisiPrivateForGuru), [supervisiPrivateForGuru]);
 
   const showToast = (type: ToastMessage['type'], title: string, message: string) => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -1354,6 +1409,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {}
 
     showToast('success', 'Database Aktif Diganti', `Master aktif sekarang adalah "${activeRecord?.namaSekolah || ''}" (TP ${activeRecord?.tahunPelajaran || ''} • ${activeRecord?.semesterAktif || ''}).`);
+  };
+
+  const setSupervisiPrivateForGuru = async (val: boolean) => {
+    setSupervisiPrivateForGuruState(val);
+    saveToStorage('supervisiPrivateForGuru', val);
+    try {
+      await setDoc(doc(db, 'school_data', 'sdn_lanto_master'), {
+        supervisiPrivateForGuru: val,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Gagal sinkronisasi supervisiPrivateForGuru ke Cloud:', e);
+    }
+  };
+
+  const toggleSupervisiPrivacy = () => {
+    const nextVal = !supervisiPrivateForGuru;
+    setSupervisiPrivateForGuru(nextVal);
+    showToast(
+      'info',
+      nextVal ? 'Privasi Supervisi Aktif' : 'Mode Terbuka Aktif',
+      nextVal
+        ? 'Hasil supervisi akademik kini hanya dapat dilihat oleh guru yang bersangkutan saat login di akunnya.'
+        : 'Mode terbuka diaktifkan: Guru dapat melihat hasil supervisi rekan guru.'
+    );
   };
 
   const addUser = (userData: Omit<UserAccount, 'id' | 'tanggalEnrol'>) => {
@@ -2330,6 +2410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         rencanaPerbaikanList,
         administrasiGuruList,
         riwayatPelatihanList,
+        supervisiPrivateForGuru,
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
@@ -2417,6 +2498,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAdministrasiGuruList(initialAdministrasiGuru);
     setRiwayatPelatihanList(initialRiwayatPelatihanGuru);
     setDatabaseSekolahList(initialDatabaseSekolah);
+    setSupervisiPrivateForGuruState(true);
+    saveToStorage('supervisiPrivateForGuru', true);
     showToast('info', 'Data Direset', 'Semua data telah dikembalikan ke standar awal UPTD SPF SDN Lanto Dg. Pasewang.');
   };
 
@@ -2567,6 +2650,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         syncFormulirToManajerial,
         syncFormulirToAkademik,
         syncAllFormulirToAkademik,
+
+        supervisiPrivateForGuru,
+        setSupervisiPrivateForGuru,
+        toggleSupervisiPrivacy,
 
         addRKAS: rkasCRUD.add,
         updateRKAS: rkasCRUD.update,

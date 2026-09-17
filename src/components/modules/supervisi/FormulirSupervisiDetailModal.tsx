@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useApp } from '../../../context/AppContext';
+import { useApp, isTeacherSupervisiMatch } from '../../../context/AppContext';
 import { FormulirSupervisiLengkap } from '../../../types';
 import { Modal } from '../../common/Modal';
 import {
@@ -15,7 +15,9 @@ import {
   Award,
   Share2,
   CheckSquare,
-  Square
+  Square,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 
 interface FormulirSupervisiDetailModalProps {
@@ -31,10 +33,13 @@ export const FormulirSupervisiDetailModal: React.FC<FormulirSupervisiDetailModal
   item,
   onEdit
 }) => {
-  const { profilSekolah } = useApp();
+  const { profilSekolah, currentUser, supervisiPrivateForGuru } = useApp();
   const printRef = useRef<HTMLDivElement>(null);
 
   if (!item) return null;
+
+  const isGuru = currentUser.role === 'guru';
+  const hasAccess = !isGuru || !supervisiPrivateForGuru || isTeacherSupervisiMatch(item, currentUser);
 
   const handlePrint = () => {
     window.print();
@@ -42,6 +47,39 @@ export const FormulirSupervisiDetailModal: React.FC<FormulirSupervisiDetailModal
 
   const checkedCount = item.observasi.areaObservasi.filter(a => a.ada).length;
   const totalCount = item.observasi.areaObservasi.length || 5;
+
+  if (!hasAccess) {
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Akses Instrumen Supervisi Dibatasi"
+        subtitle="Kebijakan Kerahasiaan Supervisi Akademik"
+        maxWidth="md"
+      >
+        <div className="p-6 text-center space-y-4 text-xs text-slate-700">
+          <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div>
+            <h3 className="text-base font-black text-slate-900">Hak Akses Dibatasi</h3>
+            <p className="text-xs text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
+              Anda tidak memiliki izin untuk melihat dokumen evaluasi supervisi milik rekan guru lain (<strong className="text-slate-800">{item.namaGuru}</strong>). Sesuai pengaturan privasi, guru hanya dapat mengakses hasil supervisi miliknya sendiri.
+            </p>
+          </div>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-xs transition-colors cursor-pointer"
+            >
+              Kembali ke Dokumen Saya
+            </button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -70,7 +108,7 @@ export const FormulirSupervisiDetailModal: React.FC<FormulirSupervisiDetailModal
           </div>
 
           <div className="flex items-center gap-2">
-            {onEdit && (
+            {onEdit && !isGuru && (
               <button
                 type="button"
                 onClick={() => onEdit(item)}
